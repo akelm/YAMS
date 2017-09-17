@@ -1,13 +1,5 @@
-
-# excited state lifetime in ns
-tau: 10.1
-# fluorescence qyantum yield
 QY: 0.042
-# orientation vector
-orient:
-# perpendicular (normal to NP surface)
-- 0.5
-# parallel to NP surface
-- 0.5
-# file with emission spectrum
 emission: tppohem.txt
+orient:
+- 0.5
+- 0.5

@@ -78,7 +78,7 @@ class LoopObj:
 
 
 def fluoroph1layer2(parfile=[],data=[],savename=None,mat_dict=None,\
-                    mat_sizecor_dict=None,mat_tempcor_dict=None):
+                    mat_sizecor_dict=None,mat_tempcor_dict=None,fotof_files=None):
 #    print(parent_tid)
     if (parfile and data):
         raise Exception("two param input sources")
@@ -130,7 +130,7 @@ def fluoroph1layer2(parfile=[],data=[],savename=None,mat_dict=None,\
 #    pool.join() 
 #    print(str(time.time() - start_time))
         
-    save_dic={'results':results.get(),'param':data}
+    save_dic={'results':results.get(),'param':data,'rho_rel':rho_rel}
     
 
     if savename:
@@ -145,7 +145,7 @@ def fluoroph1layer2(parfile=[],data=[],savename=None,mat_dict=None,\
             pickle.dump(save_dic,f)
             # saving obj to .mat file
         sio.savemat(savename+'.mat',save_dic) 
-        
-    porph_int(results=results.get(),data=data,savename=savename,rho_rel=rho_rel)
+    if fotof_files!=None:
+        porph_int(results=results.get(),data=data,savename=savename,rho_rel=rho_rel,fotof_files=fotof_files)
     
     

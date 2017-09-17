@@ -15,11 +15,14 @@ from itertools import repeat
 from parametry1 import check_input,find_ind,zakres
 from thread2 import Thread
 from Drag_And_Drop_Listbox import Drag_and_Drop_Listbox
+from multilistbox import MultiListbox
+import glob
+import shutil
 #import time
-#import sys
+import sys
 #import subprocess
 from multiprocessing import Process
-
+import logging
 #paths=[os.getcwd(),\
 #os.path.abspath(os.path.join(os.getcwd(), os.pardir))+"/pkg_resources",\
 #os.path.abspath(os.path.join(os.getcwd(), os.pardir))+"/pkg_resources/ref_ind",\
@@ -27,7 +30,41 @@ from multiprocessing import Process
 #for d in paths:
 #    if not d in sys.path:
 #        sys.path.append(d)
-                
+           
+#%%
+class LoggingHandlerFrame(ttk.Frame):
+
+    class Handler(logging.Handler):
+        def __init__(self, widget):
+            logging.Handler.__init__(self)
+            self.setFormatter(logging.Formatter("%(asctime)s: %(message)s"))
+            self.widget = widget
+            self.widget.config(state=DISABLED)
+
+        def emit(self, record):
+            self.widget.config(state=NORMAL)
+            self.widget.insert(END, self.format(record) + "\n")
+            self.widget.see(END)
+            self.widget.config(state=DISABLED)
+
+    def __init__(self, *args, **kwargs):
+        ttk.Frame.__init__(self, *args, **kwargs)
+
+        self.columnconfigure(0, weight=1)
+        self.columnconfigure(1, weight=0)
+#        self.columnconfigure(2, weight=0)
+        self.rowconfigure(0, weight=1)
+
+        self.scrollbar = Scrollbar(self)
+        self.scrollbar.grid(row=0, column=1, sticky=(N,S))
+
+        self.text = Text(self, yscrollcommand=self.scrollbar.set,width=98,height=18)
+        self.text.grid(row=0, column=0,columnspan=1, sticky=(E,W))
+
+        self.scrollbar.config(command=self.text.yview)
+
+        self.logging_handler = LoggingHandlerFrame.Handler(self.text)
+
      #%%   
 class MyCheckbutton( ttk.Checkbutton ):
     def __init__(self,master,savename=None,**kwargs):
@@ -65,6 +102,8 @@ class App:
             self.mat_dict=yaml.load(stream)
         with open('../pkg_resources/mat_tempcor.yaml') as stream:
             self.mat_tempcor_dict=yaml.load(stream)
+        # list of photophysics def files
+        self.foto_files=glob.glob('../pkg_resources/photophysics/*.yaml')
         
         self.master=master
         self.threadhandle=None
@@ -82,28 +121,114 @@ class App:
 #        self.p = ttk.Panedwindow(root, orient=VERTICAL)
         self.p.grid(row=1)          
         
-        tab_dict=[('Parameters',self.create_params),\
-                  ('Geometry',self.create_geom),\
-                  ('Photophysics',self.create_photoph),\
-                  ('Files',self.create_files),
-                  ('Log',self.create_log)]
+        tab_list=[['Parameters',self.create_params],\
+                  ['Geometry',self.create_geom],\
+                  ['Photophysics',self.create_photoph],\
+                  ['Files',self.create_files],
+                  ['Log',self.create_log]]
         
-        for item in tab_dict:
+        for item in tab_list:
             key=item[0]
             funct=item[1]
             frame=ttk.Frame(self.p)
             funct(frame)
+            item.append(frame)
+#            self.p.add(frame,text=key)
+            
+        tab_list[0],tab_list[1]=tab_list[1],tab_list[0]
+        
+        
+        for item in tab_list:
+            key=item[0]
+            frame=item[2]
             self.p.add(frame,text=key)
-        self.p.insert(0,)
+            
+            
+            
+#        self.p.insert(0,)
 #        self.create_geom()
 #        self.create_params()
 #        self.create_photoph()
 #        self.create_files()
         #self.create_right()
-    def create_menu(self,master):
-        pass
-
+    def copy(self):
+        master=self.master
+        obj=master.focus_get()
+        try:
+            text = obj.selection_get()
+            master.clipboard_clear()
+            master.clipboard_append(text)
+            master.update() # now it stays on the clipboard after the window is closed
+        except TclError:
+            pass
+    def cut(self):
+        master=self.master
+        obj=master.focus_get()
+        try:
+            text = obj.selection_get()
+            master.clipboard_clear()
+            master.clipboard_append(text)
+            master.update() # now it stays on the clipboard after the window is closed
+            obj.delete(SEL_FIRST, SEL_LAST)
+        except TclError:
+            pass
+    def paste(self):
+        master=self.master
+        obj=master.focus_get()
+        try:
+            text=master.selection_get(selection='CLIPBOARD')
+            obj.insert(INSERT,text)
+        except TclError:
+            pass
+    def selectall(self):
+        master=self.master
+        obj=master.focus_get()
+        try:
+            obj.selection_range(0, END)
+        except AttributeError:
+            pass
         
+    def create_menu(self,master):
+        self.menubar=Menu(master)
+        # File
+        self.filemenu = Menu(self.menubar, tearoff=0)
+        self.filemenu.add_command(label="Load input file", command=self.LoadFile)
+        self.filemenu.add_command(label="Save input file", command=self.SaveFileNow)
+        self.filemenu.add_command(label="Load raw results", command=lambda: self.LoadResFile(self.raw_results,"Save raw results as"))
+        self.filemenu.add_command(label="Save raw results as", command=lambda: self.SaveResNow(self.raw_results),state="disabled")
+        self.filemenu.add_command(label="Load photophysics definition", command=self.LoadPhotoFile)
+        self.filemenu.add_command(label="Load photophysics results", command=lambda: self.LoadResFile(self.foto_results,"Save photophysics results as"))
+        self.filemenu.add_command(label="Save photophysics results as", command=lambda: self.SaveResNow(self.raw_results),\
+                                  state="disabled")
+#        self.filemenu.add_command(label="Export .bib references", command=[])
+        self.filemenu.add_separator()
+        self.filemenu.add_command(label="Exit", command=master.destroy)
+        self.menubar.add_cascade(label="File", menu=self.filemenu)
+        # Edit
+        self.editmenu = Menu(self.menubar, tearoff=0)
+        self.editmenu.add_command(label="Cut", command=self.cut)
+        self.editmenu.add_command(label="Copy", command=self.copy)
+        self.editmenu.add_command(label="Paste", command=self.paste)
+        self.editmenu.add_command(label="Select all", command=self.selectall)
+        self.menubar.add_cascade(label="Edit", menu=self.editmenu)
+        # Run
+        self.runmenu = Menu(self.menubar, tearoff=0)
+        self.runmenu.add_command(label="Preview", command=self.create_window)
+        self.runmenu.add_command(label="Check integrity", command=self.results_size)
+        self.runmenu.add_command(label="Run Mie calc", command=self.Run)
+        self.runmenu.add_command(label="Run photophysics", command=self.RunFoto,state="disabled")
+        self.runmenu.add_command(label="Run all", command=lambda: self.Run(fotof_files=self.mlb.getcurselection(0)))
+        self.runmenu.add_command(label="Stop", command=self.stop,state="disabled")
+        self.menubar.add_cascade(label="Run", menu=self.runmenu)
+        # Help
+        self.helpmenu = Menu(self.menubar, tearoff=0)
+        self.helpmenu.add_command(label="README", command=[])
+        self.helpmenu.add_command(label="Licence", command=[])
+        self.helpmenu.add_command(label="References", command=[])
+        self.menubar.add_cascade(label="Help", menu=self.helpmenu)
+
+        # display the menu
+        master.config(menu=self.menubar)
         
         
         
@@ -241,79 +366,122 @@ class App:
         
     def create_photoph(self,frame):
         
-        self.ifphotoph=BooleanVar()
-        self.ifphotoph.set(False)
- 
-        self.check_photoph = ttk.Checkbutton(frame, text='Photophysics',\
-            variable=self.ifphotoph, \
-            command=lambda: EnableButton(self.ifphotoph.get(),*obj_list))
-        self.check_photoph.grid(column=0,row=8,columnspan=1,sticky="w")
+        ttk.Label(frame,text='Photophysical data loaded from files:',\
+          padding=(5,5,10,10)).grid(column=0,row=0,columnspan=5,sticky="w")
         
-        self.mb=  ttk.Menubutton ( frame,width=4,text='...',padding=(5,5,10,10))
-        self.mb.grid(column=2,row=8,columnspan=1,sticky="w")
-        self.mb.menu  =  Menu ( self.mb, tearoff = 0 )
-        self.mb["menu"]  =  self.mb.menu
+        self.mlb = MultiListbox(frame, (('definition file', 30), ('QY', 12), ('TDM || r', 12),('emission file',30)))
+#       for i in range(1000):
+#          mlb.insert(END, 
+#              ('Important Message: %d' % i, 'John Doe', '10/10/%04d' % (1900+i)))
+        self.mlb.grid(column=0,row=1,columnspan=5,sticky="ew") 
+        for file in self.foto_files:
+            with open(file) as stream:
+                foto_dict=yaml.load(stream)
+            self.mlb.insert(END, 
+              (os.path.basename(file), foto_dict['QY'], foto_dict['orient'][0],foto_dict['emission']))
+        
+        ttk.Label(frame,text='Add a chromophore:',\
+          padding=(5,5,10,10)).grid(column=0,row=2,columnspan=4,sticky="w")   
+        
+        self.foto_add = ttk.Button(frame, text='ADD',padding=(5,5,10,10),\
+                                command=self.AddFoto)
+        self.foto_add.grid(column=3,row=2,columnspan=2,sticky="e")
+        
+        self.foto_clear = ttk.Button(frame, text='CLEAR',padding=(5,5,10,10),\
+                                command=self.clear_entries)
+        self.foto_clear.grid(column=3,row=2,columnspan=2,sticky="w")
+        
+        self.fotoname_entry=ttk.Entry(frame,width=30)
+        self.fotoname_entry.grid(column=0,row=3,columnspan=1,sticky="w")
+        
+        self.fotoqy_entry=ttk.Entry(frame,width=12)
+        self.fotoqy_entry.grid(column=1,row=3,columnspan=1,sticky="w")
+        
+        self.fototdm_entry=ttk.Entry(frame,width=12)
+        self.fototdm_entry.grid(column=2,row=3,columnspan=1,sticky="w")
+        
+        self.fotoem_entry=ttk.Entry(frame,width=24)
+        self.fotoem_entry.grid(column=3,row=3,columnspan=1,sticky="w")
+        
+        self.fotoem_add = ttk.Button(frame, text='...',padding=(0,0,0,0),width=4,\
+                                command=lambda: self.OpenFile(self.fotoem_entry) )
+        self.fotoem_add.grid(column=4,row=3,columnspan=1,sticky="e")
+        
 
-        self.ifmenu=BooleanVar()
-        self.ifmenu.set(True)
-        self.radio_list=ttk.Radiobutton(frame, text="Choose chromophores: ",variable=self.ifmenu,\
-                value=True, command=EnableButton(self.ifmenu.get(),self.mb))
-        self.radio_list.grid(column=1,row=8,columnspan=1,sticky="w")
         
-        ## tutaj wczytuje zawartosc /home/ania/Pulpit/publikacja_jpp/YAMS/pkg_resources/photophysics/
-#        Item0 = IntVar()
-#        Item1 = IntVar()
-#        Item2 = IntVar()
+#        self.ifphotoph=BooleanVar()
+#        self.ifphotoph.set(False)
+# 
+#        self.check_photoph = ttk.Checkbutton(frame, text='Photophysics',\
+#            variable=self.ifphotoph, \
+#            command=lambda: EnableButton(self.ifphotoph.get(),*obj_list))
+#        self.check_photoph.grid(column=0,row=8,columnspan=1,sticky="w")
 #        
-#        self.mb.menu.add_checkbutton ( label="Item0", variable=Item0)
-#        self.mb.menu.add_checkbutton ( label="Item1", variable=Item1)
-#        self.mb.menu.add_checkbutton ( label="Item2", variable=Item2)
-#        self.mb.configure(width=1)
-        
-
-        self.emission_label=ttk.Label(frame, text='emission file: ')
-        self.emission_label.grid(column=3,row=8,columnspan=1,sticky="w")
-        self.load_emission = ttk.Button(frame, text="...",padding=(5,5,10,10),\
-                        command=lambda: self.create_window(),width=8)
-        self.load_emission.grid(column=3,row=8,columnspan=1,sticky="e")        
-        
-        self.qy_label=ttk.Label(frame, text='QY: ')
-        self.qy_label.grid(column=0,row=9,columnspan=1,sticky="w")
-        self.qy_entry=ttk.Entry(frame,width=10)
-        self.qy_entry.grid(column=0,row=9,columnspan=1,sticky="e")
-        
-        self.or_label=ttk.Label(frame, text=' orientation: ')
-        self.or_label.grid(column=1,row=9,columnspan=1,sticky="w")
-        self.or_label1=ttk.Label(frame, text='perpendicular: ')
-        self.or_label1.grid(column=1,row=9,columnspan=1,sticky="e")
-        self.or_perp=ttk.Entry(frame,width=10)
-        self.or_perp.grid(column=2,row=9,columnspan=1,sticky="w")
-        
-        self.or_label2=ttk.Label(frame, text='parallel: ')
-        self.or_label2.grid(column=2,row=9,columnspan=1,sticky="e")
-        self.or_para=ttk.Entry(frame,width=10)
-        self.or_para.grid(column=3,row=9,columnspan=1,sticky="w")
-        
-        self.add_photoph = ttk.Button(frame, text="Save",padding=(5,5,10,10),\
-                        command=lambda: self.create_window(),width=8)
-        self.add_photoph.grid(column=3,row=9,columnspan=1,sticky="e")
-        
-
-        
-        obj_custom=[self.add_photoph,self.or_para,self.or_label2,self.or_perp,self.or_label1,
-                  self.or_label,self.qy_entry,self.qy_label,self.load_emission,
-                  self.emission_label]
-        self.radio_custom=ttk.Radiobutton(frame, variable=self.ifmenu,\
-            value=False,text='Custom: ', command=EnableButton( not self.ifmenu.get(),*obj_custom))
-        self.radio_custom.grid(column=2,row=8,columnspan=1,sticky="e")
-        
-        
-        obj_list=[self.add_photoph,self.or_para,self.or_label2,self.or_perp,self.or_label1,
-                  self.or_label,self.qy_entry,self.qy_label,self.load_emission,
-                  self.emission_label,self.radio_custom,self.radio_list,self.mb]        
-        
-        for obj in obj_list:
-            obj.state(["disabled"])
+#        self.mb=  ttk.Menubutton ( frame,width=4,text='...',padding=(5,5,10,10))
+#        self.mb.grid(column=2,row=8,columnspan=1,sticky="w")
+#        self.mb.menu  =  Menu ( self.mb, tearoff = 0 )
+#        self.mb["menu"]  =  self.mb.menu
+#
+#        self.ifmenu=BooleanVar()
+#        self.ifmenu.set(True)
+#        self.radio_list=ttk.Radiobutton(frame, text="Choose chromophores: ",variable=self.ifmenu,\
+#                value=True, command=EnableButton(self.ifmenu.get(),self.mb))
+#        self.radio_list.grid(column=1,row=8,columnspan=1,sticky="w")
+#        
+#        ## tutaj wczytuje zawartosc /home/ania/Pulpit/publikacja_jpp/YAMS/pkg_resources/photophysics/
+##        Item0 = IntVar()
+##        Item1 = IntVar()
+##        Item2 = IntVar()
+##        
+##        self.mb.menu.add_checkbutton ( label="Item0", variable=Item0)
+##        self.mb.menu.add_checkbutton ( label="Item1", variable=Item1)
+##        self.mb.menu.add_checkbutton ( label="Item2", variable=Item2)
+##        self.mb.configure(width=1)
+#        
+#
+#        self.emission_label=ttk.Label(frame, text='emission file: ')
+#        self.emission_label.grid(column=3,row=8,columnspan=1,sticky="w")
+#        self.load_emission = ttk.Button(frame, text="...",padding=(5,5,10,10),\
+#                        command=lambda: self.create_window(),width=8)
+#        self.load_emission.grid(column=3,row=8,columnspan=1,sticky="e")        
+#        
+#        self.qy_label=ttk.Label(frame, text='QY: ')
+#        self.qy_label.grid(column=0,row=9,columnspan=1,sticky="w")
+#        self.qy_entry=ttk.Entry(frame,width=10)
+#        self.qy_entry.grid(column=0,row=9,columnspan=1,sticky="e")
+#        
+#        self.or_label=ttk.Label(frame, text=' orientation: ')
+#        self.or_label.grid(column=1,row=9,columnspan=1,sticky="w")
+#        self.or_label1=ttk.Label(frame, text='perpendicular: ')
+#        self.or_label1.grid(column=1,row=9,columnspan=1,sticky="e")
+#        self.or_perp=ttk.Entry(frame,width=10)
+#        self.or_perp.grid(column=2,row=9,columnspan=1,sticky="w")
+#        
+#        self.or_label2=ttk.Label(frame, text='parallel: ')
+#        self.or_label2.grid(column=2,row=9,columnspan=1,sticky="e")
+#        self.or_para=ttk.Entry(frame,width=10)
+#        self.or_para.grid(column=3,row=9,columnspan=1,sticky="w")
+#        
+#        self.add_photoph = ttk.Button(frame, text="Save",padding=(5,5,10,10),\
+#                        command=lambda: self.create_window(),width=8)
+#        self.add_photoph.grid(column=3,row=9,columnspan=1,sticky="e")
+#        
+#
+#        
+#        obj_custom=[self.add_photoph,self.or_para,self.or_label2,self.or_perp,self.or_label1,
+#                  self.or_label,self.qy_entry,self.qy_label,self.load_emission,
+#                  self.emission_label]
+#        self.radio_custom=ttk.Radiobutton(frame, variable=self.ifmenu,\
+#            value=False,text='Custom: ', command=EnableButton( not self.ifmenu.get(),*obj_custom))
+#        self.radio_custom.grid(column=2,row=8,columnspan=1,sticky="e")
+#        
+#        
+#        obj_list=[self.add_photoph,self.or_para,self.or_label2,self.or_perp,self.or_label1,
+#                  self.or_label,self.qy_entry,self.qy_label,self.load_emission,
+#                  self.emission_label,self.radio_custom,self.radio_list,self.mb]        
+#        
+#        for obj in obj_list:
+#            obj.state(["disabled"])
              #%%   
 #        self.frame_bottom = ttk.LabelFrame(self.p,text='Files',\
 #                                         padding=(3,3,12,12),relief='groove')
@@ -323,87 +491,128 @@ class App:
     def create_files(self,frame):
 #        self.frame_bottom = ttk.Frame(master)
 #        master.add(self.frame_bottom,text='Files') 
+        self.refresh_button = ttk.Button(frame, text="Refresh names",padding=(5,5,10,10),\
+                                command=lambda: self.refresh_names(),state='enabled')
+        self.refresh_button.grid(column=4,row=9,columnspan=2,sticky="ew")
         
-        self.butt_check=ttk.Button(frame, text='check integrity and update size',padding=(5,5,10,10),
-        command=lambda: self.res_size.set(self.results_size()) ,\
+        self.butt_check=ttk.Button(frame, text='Check integrity and update size',padding=(5,5,10,10),
+        command=self.results_size ,\
             state='enabled')
-        self.butt_check.grid(column=3,row=9,columnspan=3,sticky="e")
-        ttk.Label(frame,text='Approximate size of results is / MB: ',\
-                  padding=(5,5,10,10)).grid(column=0,row=9,columnspan=2,sticky="w")
-        self.res_size=StringVar()
-        self.res_size.set('0')
-        ttk.Label(frame, textvariable=self.res_size,padding=(5,5,10,10)).grid(column=2,row=9,sticky="w")
+        self.butt_check.grid(column=3,row=9,columnspan=1,sticky="e")
         
+        
+        self.res_size=StringVar()
+        self.res_size.set('Approximate size of results is 0 MB')
+        ttk.Label(frame,textvariable=self.res_size,relief='flat',background='white',\
+                  padding=(10,5,10,5)).grid(column=0,row=9,columnspan=2,sticky="e")
 
+#        ttk.Label(frame, textvariable=self.res_size,padding=(5,5,10,10)).grid(column=2,row=9,columnspan=2,sticky="w")
+        
+        ttk.Separator(frame, orient=HORIZONTAL).grid(row=10, \
+             columnspan=5,sticky="ew",pady=5)
         # SAVE PARAMS AND RES
+
+        now='_'.join(map(str,datetime.datetime.now().timetuple()[0:6]))
+        direct='../results/res_'+now        
+        
+        
         self.ifsavepar=BooleanVar()
         self.ifsavepar.set(False)
         
-        self.butt_savepar=ttk.Button(frame, text='...',padding=(5,5,10,10),
+        self.butt_savepar=ttk.Button(frame, text='...',padding=(-10,5,-10,5),
         command=lambda: self.SaveFile(self.entry_savepar), state='disabled')
-        self.butt_savepar.grid(column=5,row=10,columnspan=1,sticky="ew")
+        self.butt_savepar.grid(column=5,row=11,columnspan=1,sticky="e")
         
-        self.check_savepar = MyCheckbutton(frame, text='Save parameters as: ',\
+        self.check_savepar = MyCheckbutton(frame, text='Auto save parameters as: ',\
             variable=self.ifsavepar, savename='par',\
             command=lambda: EnableButton(self.ifsavepar.get(),self.butt_savepar,self.entry_savepar))
-        self.check_savepar.grid(column=0,row=10,columnspan=1,sticky="w")
+        self.check_savepar.grid(column=0,row=11,columnspan=1,sticky="w")
 
-        now='_'.join(map(str,datetime.datetime.now().timetuple()[0:6]))
-        direct=os.path.abspath(os.path.join(os.getcwd(), os.pardir))+'/results/res_'+now
-        self.entry_savepar=ttk.Entry(frame)
-        self.entry_savepar.grid(column=1,columnspan=4,row=10,sticky="we",padx=4)
+        self.entry_savepar=ttk.Entry(frame,width=58)
+        self.entry_savepar.grid(column=1,columnspan=4,row=11,sticky="we",padx=4)
         self.entry_savepar.insert(0,direct+'/par_'+now+'.yaml')
         self.entry_savepar.state(["disabled"])
         
-        self.ifsaveres=BooleanVar()
-        self.ifsaveres.set(True)
+        self.saveres_default=direct+'/res_'+now
+#        self.ifsaveres=BooleanVar()
+#        self.ifsaveres.set(True)
         
-        self.butt_saveres=ttk.Button(frame, text='...',padding=(5,5,10,10),
+        self.butt_saveres=ttk.Button(frame, text='...',padding=(-10,5,-10,5),
             command=lambda: self.SaveFile(self.entry_saveres) ,state='enabled')
-        self.butt_saveres.grid(column=5,row=11,columnspan=1,sticky="ew")
+        self.butt_saveres.grid(column=5,row=12,columnspan=1,sticky="e")
         
+#        self.check_saveres = MyCheckbutton(frame, text='Save results as: ',\
+#            variable=self.ifsaveres,savename='res',
+#            command=lambda: EnableButton(self.ifsaveres.get(),self.butt_saveres,self.entry_saveres))
+#        self.check_saveres.grid(column=0,row=11,columnspan=1,sticky="w")
 
-        self.check_saveres = MyCheckbutton(frame, text='Save results as: ',\
-            variable=self.ifsaveres,savename='res',
-            command=lambda: EnableButton(self.ifsaveres.get(),self.butt_saveres,self.entry_saveres))
-        self.check_saveres.grid(column=0,row=11,columnspan=1,sticky="w")
+        Label(frame, text='Save results as: ').grid(column=0,row=12,columnspan=1,sticky="w")
         self.entry_saveres=ttk.Entry(frame)
-        self.entry_saveres.grid(column=1,columnspan=4,row=11,sticky="we",padx=4)
-        self.entry_saveres.insert(0,direct+'/res_'+now)
+        self.entry_saveres.grid(column=1,columnspan=4,row=12,sticky="we",padx=4)
+        self.entry_saveres.insert(0,self.saveres_default+'.pickle')
+        
+        self.savefoto_default=self.saveres_default+'_photoph.pickle'
+#        self.ifsavefoto=BooleanVar()
+#        self.ifsavefoto.set(True)
+        
+        self.butt_savefoto=ttk.Button(frame, text='...',padding=(-10,5,-10,5),
+            command=lambda: self.SaveFile(self.entry_savefoto) ,state='enabled')
+        self.butt_savefoto.grid(column=5,row=13,columnspan=1,sticky="e")
+        
+#        self.check_savefoto = MyCheckbutton(frame, text='Save results as: ',\
+#            variable=self.ifsavefoto,savename='res',
+#            command=lambda: EnableButton(self.ifsavefoto.get(),self.butt_savefoto,self.entry_savefoto))
+#        self.check_savefoto.grid(column=0,row=12,columnspan=1,sticky="w")
+        Label(frame, text='Save photophysics as: ').grid(column=0,row=13,columnspan=1,sticky="w")
+        
+        self.entry_savefoto=ttk.Entry(frame)
+        self.entry_savefoto.grid(column=1,columnspan=4,row=13,sticky="we",padx=4)
+        self.entry_savefoto.insert(0,self.savefoto_default)
         
         
-        self.load_button = ttk.Button(frame, text="Load parameters",padding=(5,5,10,10),\
-                                command=lambda: self.LoadFile(),state='enabled')
-        self.load_button.grid(column=2,row=12,columnspan=1,sticky="ew")
-        
-        self.refresh_button = ttk.Button(frame, text="Refresh names",padding=(5,5,10,10),\
-                                command=lambda: self.refresh_names(),state='enabled')
-        self.refresh_button.grid(column=0,row=12,columnspan=2,sticky="e")
-        
-        
-        self.about_button = ttk.Button(frame, text="About",padding=(5,5,10,10),\
-                                command=lambda: self.about(),state='enabled')
-        self.about_button.grid(column=0,row=12,columnspan=1,sticky="w")
+#        self.load_button = ttk.Button(frame, text="Load parameters",padding=(5,5,10,10),\
+#                                command=lambda: self.LoadFile(),state='enabled')
+#        self.load_button.grid(column=2,row=12,columnspan=1,sticky="ew")
         
 
         
-        self.savenow_button = ttk.Button(frame, text="Save parameters NOW",padding=(5,5,10,10),\
-                                command=lambda: self.SaveFileNow(),state='enabled')
-        self.savenow_button.grid(column=3,row=12,columnspan=1,sticky="ew")
         
-        self.img_button = ttk.Button(frame, text="Preview",padding=(5,5,10,10),\
-                                command=lambda: self.create_window(),state='enabled')
-        self.img_button.grid(column=4,row=12,columnspan=1,sticky="ew")
+#        self.about_button = ttk.Button(frame, text="About",padding=(5,5,10,10),\
+#                                command=lambda: self.about(),state='enabled')
+#        self.about_button.grid(column=0,row=12,columnspan=1,sticky="w")
         
-        self.butt_run=ttk.Button(frame, text='RUN',padding=(5,5,10,10),
-            command=lambda: self.Run() ,\
-            state='enabled')
-        self.butt_run.grid(column=5,row=12,columnspan=1,sticky="ew")
+
+        
+#        self.savenow_button = ttk.Button(frame, text="Save parameters NOW",padding=(5,5,10,10),\
+#                                command=lambda: self.SaveFileNow(),state='enabled')
+#        self.savenow_button.grid(column=3,row=12,columnspan=1,sticky="ew")
+        
+#        self.img_button = ttk.Button(frame, text="Preview",padding=(5,5,10,10),\
+#                                command=lambda: self.create_window(),state='enabled')
+#        self.img_button.grid(column=4,row=12,columnspan=1,sticky="ew")
+        
+#        self.butt_run=ttk.Button(frame, text='RUN',padding=(5,5,10,10),
+#            command=lambda: self.Run() ,\
+#            state='enabled')
+#        self.butt_run.grid(column=5,row=12,columnspan=1,sticky="ew")
         #%%
     def create_log(self,frame):
-        pass
-    
-    
+        self.logs=LoggingHandlerFrame(frame)
+        self.logs.grid(column=0,row=0,sticky='ew')
+#        self.logs.logging_handler.emit(logging.logRecord('dd'))
+        self.logger = logging.getLogger('test')
+        self.logger.setLevel(logging.DEBUG) 
+        self.logger.addHandler(self.logs.logging_handler)
+        self.logger.info('Program started')        
+        
+        # Install exception handler
+        sys.excepthook = self.my_handler
+        
+    def my_handler(type, value, tb):
+        self.logger.exception("Uncaught exception: {0}".format(str(value)))
+
+        
+
     def give_plot(self):
         def circle(r):
             delta=r/1000
@@ -463,7 +672,7 @@ class App:
         canvas = FigureCanvasTkAgg(fig, master=self.newwindow)
         canvas.get_tk_widget().grid(column=1,row=1,columnspan=1)
         canvas.draw()
-        
+        self.logger.info('Shown system preview')
 
 
         #%%
@@ -478,15 +687,15 @@ class App:
             datastr1['wavelength']={'from':float(self.wavestart.get()),'to':float(self.wavestop.get()),\
             'every':float(self.waveevery.get())}
             layerslist=[]
-            str1=r'''
-            ^(\d+)\W+                         # begining of string, number of the layer and nonalphanum
-            (\b[a-z]+\b)                      # first word is a material
+            str1=r"""
+            ^(\d+)\W+                        
+            (\b[a-z]+\b)                     
             (?:\W*(\bsize\scorrection\b))?
             (?:\W*(\bnonlocal\scorrection\b))?
             (?:\W*\bfrom\s(\d+\.?\d*)\snm\b)?
             (?:\W*\bto\s(\d+\.?\d*)\snm\b)?
             (?:\W*\bevery\s(\d+\.?\d*)\snm\b)?
-            '''
+            """
             pattern=re.compile(str1,re.VERBOSE)
             dipolenum=re.search('^\d+',self.dipole.get()).group(0)
             for item in self.l.get(0,END):
@@ -510,19 +719,30 @@ class App:
         datastr1=check_input(datastr1,dict(zip(self.mat_list,repeat(0))),self.mat_sizecor_dict.keys())
         Lambda=[]
         Lambda.append(zakres(datastr1['wavelength']).shape[0])
+        # dodaje liczby warstw
         for dic in datastr1['layers'][:-1]:
             # range of layer
             Lambda.append(zakres(dic['range']).shape[0])
         how_many=np.prod(np.array(Lambda))
         unit_size=841/(501*81*51)
         total_size=np.round(unit_size*how_many,decimals=2)
-        return str(total_size)
+        pattern=re.compile(r'\b\d+(\.\d+)?\b')
+        newsize=re.sub(pattern,str(total_size),self.res_size.get())
+#        print(newsize)
+        self.res_size.set(newsize)
+        self.logger.info('Checked integrity and updated size')
+#        return str(total_size)
         
-      #%%  
-    def Run(self):
+    #%%
+    def RunFoto(self):
+        self.logger.info('Photophysics calculation started')
         def run_code(self):
 #            print(self.threadhandle)
-            self.butt_run.state(["disabled"])
+#            self.butt_run.state(["disabled"])
+            self.runmenu.entryconfigure("Run all",state="disabled")
+            self.runmenu.entryconfigure("Run Mie calc",state="disabled")
+            self.runmenu.entryconfigure("Run photophysics",state="disabled")
+            self.runmenu.entryconfigure("Stop",state="normal")
             self.toplev=Toplevel(root)
             self.toplev.wm_title('YAMS, processing...')
             self.toplev.protocol("WM_DELETE_WINDOW", self.stop)
@@ -533,7 +753,76 @@ class App:
                                                 length=200)
             self.progress_bar.grid(column=0,row=0,padx=5,pady=5)
             self.butt_stop = ttk.Button(self.toplev, text="STOP",padding=(5,5,5,5),\
-                                        command=lambda: self.stop())
+                                        command=self.stop)
+            self.butt_stop.grid(column=1,row=0,columnspan=1,sticky="w")
+            self.labelrun=StringVar()
+            self.labelrun.set('Running calculations...')
+            self.runlabel=ttk.Label(self.toplev,textvariable=self.labelrun,\
+                  padding=(5,5,10,10)).grid(column=0,row=1,columnspan=2,sticky="w")
+            self.progress_bar.start()    
+#            datastr1=self.make_dict()
+#            if self.ifsavepar.get():
+#                direct=os.path.dirname(self.entry_savepar.get())
+#                # create path if nonexistent
+#                if not os.path.exists(direct):
+#                    os.makedirs(direct)
+#                # save params
+#                with open(self.entry_savepar.get(), 'w', encoding='utf8') as outfile:
+#                    yaml.dump(datastr1, outfile, default_flow_style=False, allow_unicode=True)
+            savename=self.entry_savefoto.get()
+            if not savename:
+                savename=self.savefoto_default
+            kwargs={'picklefile':self.picklefile,\
+                            'savename':savename,\
+                            'fotof_files':self.mlb.getcurselection(0)}
+            p = Process(target=porph_int, kwargs=kwargs)
+            p.start()
+            self.subproc_pid=p.pid
+            p.join() # this blocks until the process terminates
+#            fluoroph1layer2(data=datastr1,\
+#                            savename=self.ifsaveres.get() and self.entry_saveres.get() or [],\
+#                            mat_dict=self.mat_dict,mat_sizecor_dict=self.mat_sizecor_dict,\
+#                            mat_tempcor_dict=self.mat_tempcor_dict)
+            
+#            self.butt_run.state(["!disabled"])
+
+#            self.butt_stop.state(["disabled"])
+            self.toplev.destroy()
+            self.runmenu.entryconfigure("Run all",state="normal")
+            self.runmenu.entryconfigure("Run Mie calc",state="normal")
+            self.runmenu.entryconfigure("Run photophysics",state="normal")
+            self.runmenu.entryconfigure("Stop",state="disabled")
+            self.filemenu.entryconfigure("Save photophysics results as",state="normal")
+            self.foto_results=savename
+#        subproc=subprocess.run(["ls", "-l"])
+#        print(subproc.pid)
+#        self.subproc_pid=subproc.pid
+        self.threadhandle=Thread(target=run_code,args=(self,))
+#        print(self.threadhandle)
+        self.threadhandle.start()
+        self.logger.info('Photophysics calculation finished')
+#        porph_int(picklefile=self.picklefile,savename=self.ifsaveres.get() and self.entry_saveres.get() or [])
+      #%%  
+    def Run(self,fotof_files=None):
+        self.logger.info('Mie theory calculation started')
+        def run_code(self):
+#            print(self.threadhandle)
+#            self.butt_run.state(["disabled"])
+            self.runmenu.entryconfigure("Run all",state="disabled")
+            self.runmenu.entryconfigure("Run Mie calc",state="disabled")
+            self.runmenu.entryconfigure("Run photophysics",state="disabled")
+            self.runmenu.entryconfigure("Stop",state="normal")
+            self.toplev=Toplevel(root)
+            self.toplev.wm_title('YAMS, processing...')
+            self.toplev.protocol("WM_DELETE_WINDOW", self.stop)
+            self.progress_bar = ttk.Progressbar(self.toplev,
+                                                orient=HORIZONTAL,
+                                                mode='indeterminate',
+                                                takefocus=True,
+                                                length=200)
+            self.progress_bar.grid(column=0,row=0,padx=5,pady=5)
+            self.butt_stop = ttk.Button(self.toplev, text="STOP",padding=(5,5,5,5),\
+                                        command=self.stop)
             self.butt_stop.grid(column=1,row=0,columnspan=1,sticky="w")
             self.labelrun=StringVar()
             self.labelrun.set('Running calculations...')
@@ -549,10 +838,13 @@ class App:
                 # save params
                 with open(self.entry_savepar.get(), 'w', encoding='utf8') as outfile:
                     yaml.dump(datastr1, outfile, default_flow_style=False, allow_unicode=True)
+            savename=self.entry_saveres.get()
+            if not savename:
+                savename=self.saveres_default
             kwargs={'data':datastr1,\
-                            'savename':self.ifsaveres.get() and self.entry_saveres.get() or [],\
+                            'savename':savename,\
                             'mat_dict':self.mat_dict,'mat_sizecor_dict':self.mat_sizecor_dict,\
-                            'mat_tempcor_dict':self.mat_tempcor_dict}
+                            'mat_tempcor_dict':self.mat_tempcor_dict,'fotof_files':fotof_files}
             p = Process(target=fluoroph1layer2, kwargs=kwargs)
             p.start()
             self.subproc_pid=p.pid
@@ -562,11 +854,17 @@ class App:
 #                            mat_dict=self.mat_dict,mat_sizecor_dict=self.mat_sizecor_dict,\
 #                            mat_tempcor_dict=self.mat_tempcor_dict)
             
-            self.butt_run.state(["!disabled"])
+#            self.butt_run.state(["!disabled"])
+
 #            self.butt_stop.state(["disabled"])
             self.toplev.destroy()
-            
-
+            self.runmenu.entryconfigure("Run all",state="normal")
+            self.runmenu.entryconfigure("Run Mie calc",state="normal")
+            self.runmenu.entryconfigure("Run photophysics",state="normal")
+            self.runmenu.entryconfigure("Stop",state="disabled")           
+            self.filemenu.entryconfigure("Save raw results as",state="normal")
+            self.raw_results=savename
+            self.logger.info('Mie theory calculation finished')
 #        subproc=subprocess.run(["ls", "-l"])
 #        print(subproc.pid)
 #        self.subproc_pid=subproc.pid
@@ -578,7 +876,7 @@ class App:
 #        parent = psutil.Process(curpid)
 #        for child in parent.children(recursive=True):  # or parent.children() for recursive=False
 #            print(child)
-
+        
      #%%
     def stop(self):
         def stoop(self):
@@ -598,10 +896,15 @@ class App:
 #            self.threadhandle.terminate()
 ##            print('joining ',self.threadhandle)
 #            self.threadhandle.join()
-            self.butt_run.state(["!disabled"])
+#            self.butt_run.state(["!disabled"])
+
             self.toplev.destroy()
- 
-     
+            self.runmenu.entryconfigure("Run all",state="normal")
+            self.runmenu.entryconfigure("Run Mie calc",state="normal")
+            self.runmenu.entryconfigure("Run photophysics",state="normal")
+            self.runmenu.entryconfigure("Stop",state="disabled") 
+            self.logger.info('Stopped')
+        self.logger.info('Stopping')
         if self.threadhandle.isAlive() and self.toplev.winfo_exists():
             self.butt_stop.state(["disabled"])
             self.labelrun.set('Terminating calculations...')
@@ -611,23 +914,31 @@ class App:
            #%%
     def refresh_names(self):
             now='_'.join(map(str,datetime.datetime.now().timetuple()[0:6]))
-            direct=os.path.abspath(os.path.join(os.getcwd(), os.pardir))+'/results/res_'+now
+            direct='../results/res_'+now
             self.entry_savepar.delete(0,END)
             self.entry_savepar.insert(0,direct+'/par_'+now+'.yaml')
             self.entry_saveres.delete(0,END)
-            self.entry_saveres.insert(0,direct+'/res_'+now+'.yaml')
-            
+            self.entry_saveres.insert(0,direct+'/res_'+now+'.pickle')
+            self.entry_savefoto.delete(0,END)
+            self.entry_savefoto.insert(0,direct+'/res_'+now+'_photoph.pickle')
+            self.logger.info('Names refreshed')
             #%%
     def about(self):
         pass
         
         
  #%%       
-    def SaveFile(self,entry):
-        f = filedialog.asksaveasfilename(defaultextension=".yaml",)
+    def OpenFile(self,entry):
+        f = filedialog.askopenfilename(initialdir='../pkg_resources/photophysics')
         if f:
             entry.delete(0, END)
-            entry.insert(f)
+            entry.insert(0,f)
+ 
+    def SaveFile(self,entry):
+        f = filedialog.asksaveasfilename(defaultextension=".yaml",initialdir='../results/')
+        if f:
+            entry.delete(0, END)
+            entry.insert(0,f)
     def SaveFileNow(self):
         f = filedialog.asksaveasfilename(defaultextension=".yaml",initialdir="../input_files/",\
                                        filetypes=(("yaml files","*.yaml"),("all files","*.*")))
@@ -636,6 +947,78 @@ class App:
            datastr1=check_input(datastr1,dict(zip(self.mat_list,repeat(0))),self.mat_sizecor_dict.keys())
            with open(f, 'w', encoding='utf8') as outfile:
               yaml.dump(datastr1, outfile, default_flow_style=False, allow_unicode=True) 
+    def SaveResNow(self,resfile):
+        if resfile:
+            f = filedialog.asksaveasfilename(defaultextension=".pickle",initialdir="../results/",\
+                                           filetypes=(("pickle files","*.pickle"),("MATLAB files","*.mat"),("all files","*.*")))
+            if f:
+               extensionf = '.mat' if os.path.splitext(f)[1]=='.mat' else '.pickle'
+               extensionr = os.path.splitext(resfile)[1]
+               if extensionf==extensionr:
+                   shutil.copyfile(resfile,f)
+               else:
+                   if extensionr=='.pickle':
+                       with open('GenLL.py','rb') as file:
+                           dic = pickle.load(file)
+                       sio.savemat(f,dic)
+                   if extensionr=='.mat':
+                       dic=sio.loademat(resfile)
+                       with open(f,'wb') as file:
+                           pickle.dump(dic,file)
+                   if not extensionr:
+                       dic={}
+                       try:
+                           with open(resfile,'rb') as file:
+                               dic = pickle.load(file)
+                       except pickle.UnpicklingError:
+                           try:
+                               dic=sio.loademat(resfile)
+                           except ValueError:
+                               print('Results file is neither .pickle nor .mat file! Will not save.')
+                       if dic:
+                           if extensionf=='.mat':
+                               sio.savemat(f,dic)
+                           else:
+                              with open(f,'wb') as file:
+                                  pickle.dump(dic,file)
+               self.logger.info('Saved results')                            
+           
+    def LoadResFile(self,varobj,sstr):
+        f = filedialog.askopenfilename(initialdir="../results/",\
+                                       filetypes=(("pickle files","*.pickle"),("MATLAB files","*.mat"),("all files","*.*")))
+        varobj=f
+        if varobj:
+            self.filemenu.entryconfigure(sstr,state="normal")
+            if sstr=="Save raw results as":
+                self.runmenu.entryconfigure("Run photophysics",state="normal")
+        self.logger.info('Loaded results file')
+    
+    def clear_entries(self):
+        for obj in (self.fotoqy_entry,self.fotoname_entry,self.fotoem_entry,self.fototdm_entry):
+            obj.delete(0, 'end')
+        
+    def LoadPhotoFile(self):
+        f = filedialog.askopenfilename(initialdir="../pkg_resources/photophysics",\
+                                       filetypes=(("yaml files","*.yaml"),("all files","*.*")))
+        if f:
+            self.clear_entries()
+            try:
+                with open(f, 'r') as outfile:
+                      data=yaml.load(outfile)
+                      self.fototdm_entry.insert(0,data['orient'][0])
+                      self.fotoqy_entry.insert(0,data['QY'])
+                      emname=data['emission']
+                      if not os.path.isabs(emname):
+                          dir1=os.path.dirname(f)
+                          emname = os.path.join(dir1, emname)
+                          emname=os.path.abspath(emname)
+                      self.fotoem_entry.insert(0,emname)
+                      self.fotoname_entry.insert(0,os.path.basename(f))
+                self.AddFoto()
+            except:
+                pass
+        self.logger.info('Loaded photophysics definition file')
+                
      #%%         
     def LoadFile(self):
         
@@ -686,7 +1069,7 @@ class App:
               self.l.UpdateNumbering()
               if dipnum!=None:
                   self.dipole.set(self.dipole['values'][dip_num])
-                 
+           self.logger.info('Loaded input parameters')                 
 #%%
     def AddButtonCommand(self):
         self.l.AddParams()
@@ -698,6 +1081,51 @@ class App:
         ' nm every '+self.everyy.get()+' nm'
         self.l.insert(END, String)
         self.l.UpdateNumbering()
+        self.logger.info('Added layer')
+        
+    def AddFoto(self):
+        try:
+            qy=float(self.fotoqy_entry.get())
+            if qy>1: raise ValueError('QY must be <=1')
+            tdm=float(self.fototdm_entry.get())
+            if tdm>1: raise ValueError('TDM || r must be <=1')
+            emname=self.fotoem_entry.get()
+            if not os.path.isfile(emname): raise FileNotFoundError
+            # kopiuje em file
+            try: 
+                shutil.copy2(emname,'../pkg_resources/photophysics/')
+            except shutil.SameFileError:
+                pass
+            emname=os.path.basename(emname)
+            param_name=self.fotoname_entry.get()
+            if not param_name:
+                max_num=0
+                pattern=re.compile('^chromophore(\d+).yaml$')
+                for s in self.mlb.get(0,last=END,collist=0)[0]:
+                    found=re.findall(pattern,s)
+                    if found:
+                        max_num=max_num if max_num>int(found[0]) else int(found[0])
+                param_name='chromophore'+str(max_num+1)+'.yaml'
+#                self.foto_files.append(param_name)
+            else:
+#                if not re.findall(r'^.(\.yaml)$',param_name): param_name+='.yaml'
+                if not os.path.splitext(param_name)[1]=='.yaml': param_name+='.yaml'
+#                print(param_name)
+#                print(self.mlb.get(0,last=END,collist=0)[0])
+                if param_name in self.mlb.get(0,last=END,collist=0)[0]: raise FileExistsError
+            self.mlb.insert(END, 
+              (os.path.basename(param_name), qy, tdm,emname))
+            # tutaj dodaje plik
+            foto_dict={'QY':qy,'orient':[tdm,1-tdm],'emission':emname}
+            with open('../pkg_resources/photophysics/'+param_name, 'w', encoding='utf8') as outfile:
+                yaml.dump(foto_dict, outfile, default_flow_style=False, allow_unicode=True)
+            # clear the entry fields    
+            self.clear_entries()
+            self.logger.info('Added photophysics entry')
+        except (ValueError,FileNotFoundError,FileExistsError):
+            pass
+        
+        
         
         
 #%%

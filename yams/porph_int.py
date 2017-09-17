@@ -21,14 +21,14 @@ def int_spectrum(indices,spectrum,factor):
     res=np.sum(enh*spectrum)/np.sum(spectrum)
     return res
 
-def porph_int(results=[],data=[],picklefile=[],savename=None,rho_rel=1):
+def porph_int(results=[],data=[],picklefile=[],savename=None,rho_rel=1,fotof_files=None):
     # loading pickle file
     if picklefile:
         with open(picklefile,'rb') as f:
             dic = pickle.load(f)
             picklecontent=dic['picklecontent']
     if results and data:
-        picklecontent={'results':results,'param':data}
+        picklecontent={'results':results,'param':data,'rho_rel':rho_rel}
         
     if savename:
         dirname=os.path.dirname(savename)
@@ -38,7 +38,7 @@ def porph_int(results=[],data=[],picklefile=[],savename=None,rho_rel=1):
         dirname=dirname+'/'
         filename=os.path.basename(savename)        
     else:
-        dirname='./'
+        dirname='../results/'
       
     
     # wavelenghts from calculation
@@ -51,8 +51,7 @@ def porph_int(results=[],data=[],picklefile=[],savename=None,rho_rel=1):
     Camat=np.array(tuple(map(getitem,picklecontent['results'],repeat('Ca_dict'))))
     matrix_size=list(map(len,(map(set,np.swapaxes(Camat,1,0)))))
     photoph={}
-    if rho_rel:
-        photoph['rho_rel']=rho_rel
+    photoph['rho_rel']=rho_rel
     # putting Q into matrix
     qkeys=('QextM', 'QscaM', 'QabsM','QextT', 'QscaT', 'QabsT')
     for key in qkeys:
@@ -60,9 +59,9 @@ def porph_int(results=[],data=[],picklefile=[],savename=None,rho_rel=1):
         # on the spectra
         photoph[key]=\
             np.array(tuple(map(getitem,picklecontent['results'],repeat(key)))).\
-            reshape(([*matrix_size,Lambda.size]))*rho_rel
+            reshape(([*matrix_size,Lambda.size]))*photoph['rho_rel']
 
-    fotof_files=['tpp.yaml','pdtppF.yaml','pdtppP.yaml']
+#    fotof_files=['tpp.yaml','pdtppF.yaml','pdtppP.yaml']
     # loading photophysics
     for fotof_file in fotof_files:
         with open('../pkg_resources/photophysics/'+fotof_file) as stream:
@@ -112,7 +111,7 @@ def porph_int(results=[],data=[],picklefile=[],savename=None,rho_rel=1):
         # with effect of higher concentration because of contraction
         photoph['Fexc_'+sufix]=\
             np.array(tuple(map(getitem,results_photoph,repeat('Fexc_'+sufix)))).\
-            reshape([*matrix_size,Lambda.size])*rho_rel
+            reshape([*matrix_size,Lambda.size])*photoph['rho_rel']
         photoph['FGamma_'+sufix]=\
             photoph['Fexc_'+sufix]*(photoph['FQY_'+sufix].reshape([*matrix_size,1]))
     
@@ -226,7 +225,7 @@ def porph_int(results=[],data=[],picklefile=[],savename=None,rho_rel=1):
         with open(picklefile,'wb') as f:
                 pickle.dump(photoph,f)
         # saving obj to .mat file
-        sio.savemat(dirname+filename+'_photoph'+'.mat',photoph)      
+        sio.savemat(dirname+filename+'_photoph'+'.mat',photoph)
         
         
 

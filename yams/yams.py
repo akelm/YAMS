@@ -37,7 +37,7 @@ class LoggingHandlerFrame(ttk.Frame):
     class Handler(logging.Handler):
         def __init__(self, widget):
             logging.Handler.__init__(self)
-            self.setFormatter(logging.Formatter("%(asctime)s: %(message)s"))
+            self.setFormatter(logging.Formatter(fmt="%(asctime)s - %(levelname)s: %(message)s", datefmt='%d.%m.%Y %H:%M:%S'))
             self.widget = widget
             self.widget.config(state=DISABLED)
 
@@ -64,7 +64,25 @@ class LoggingHandlerFrame(ttk.Frame):
         self.scrollbar.config(command=self.text.yview)
 
         self.logging_handler = LoggingHandlerFrame.Handler(self.text)
+        #%%
+class LoggerWriter:
+    def __init__(self, level):
+        # self.level is really like using log.debug(message)
+        # at least in my case
+        self.level = level
 
+    def write(self, message):
+        # if statement reduces the amount of newlines that are
+        # printed to the logger
+        if message != '\n':
+            self.level(message)
+
+    def flush(self):
+        # create a flush method so things can be flushed when
+        # the system wants to. Not sure if simply 'printing'
+        # sys.stderr is the correct way to do it, but it seemed
+        # to work properly for me.
+        self.level(sys.stderr)
      #%%   
 class MyCheckbutton( ttk.Checkbutton ):
     def __init__(self,master,savename=None,**kwargs):
@@ -603,13 +621,12 @@ class App:
         self.logger = logging.getLogger('test')
         self.logger.setLevel(logging.DEBUG) 
         self.logger.addHandler(self.logs.logging_handler)
+        sys.stdout = LoggerWriter(self.logger.debug)
+        sys.stderr = LoggerWriter(self.logger.warning)
         self.logger.info('Program started')        
         
-        # Install exception handler
-        sys.excepthook = self.my_handler
         
-    def my_handler(type, value, tb):
-        self.logger.exception("Uncaught exception: {0}".format(str(value)))
+
 
         
 
@@ -722,6 +739,8 @@ class App:
         # dodaje liczby warstw
         for dic in datastr1['layers'][:-1]:
             # range of layer
+#            print(dic['range'])
+#            print(zakres(dic['range']).shape[0])
             Lambda.append(zakres(dic['range']).shape[0])
         how_many=np.prod(np.array(Lambda))
         unit_size=841/(501*81*51)

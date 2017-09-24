@@ -75,15 +75,20 @@ def check_input(main_dict,mat_dict_keys,mat_sizecor_dict_keys):
         # wavelength
         if not 'every' in main_dict['wavelength'].keys():
             main_dict['wavelength']['every']=1
-        map(main_dict['wavelength'].__setitem__,wave_vals,\
-            sorted(map(main_dict['wavelength'].get,wave_vals)))
+        main_dict['wavelength'].update(dict(zip(wave_vals,sorted(map(main_dict['wavelength'].get,wave_vals)) )))
+#        map(main_dict['wavelength'].__setitem__,wave_vals,\
+#            sorted(map(main_dict['wavelength'].get,wave_vals)))
         main_dict['wavelength']['every']=abs(main_dict['wavelength']['every'])
         # layers
         # make every positive, make to and from ordered
         for k in range(0,len(main_dict['layers'])-1):
             main_dict['layers'][k]['range']['every']=abs(main_dict['layers'][k]['range']['every'])
-            map(main_dict['layers'][k]['range'].__setitem__, wave_vals,
-            sorted(map(main_dict['layers'][k]['range'].get, wave_vals)))
+            # dict with sorted 'from' and 'to'
+            temp_dict=dict(zip(wave_vals,sorted(map(main_dict['layers'][k]['range'].get, wave_vals))))
+            main_dict['layers'][k]['range'].update(temp_dict)
+#            map(main_dict['layers'][k]['range'].__setitem__, wave_vals,
+#            sorted(map(main_dict['layers'][k]['range'].get, wave_vals)))
+            
         return main_dict    
 
 def parametry1(data, mat_dict, mat_sizecor_dict,mat_tempcor_dict):

@@ -7,7 +7,7 @@ def int_wszystko(Ca, Cepsilon, dd, dip_pos ,kL, Lambda, RBx,RBz,xk,zk,ME,MM,TE,T
     
     # dd - warstwa z dipolem
     nK=len(Ca)
-    kd=2*np.pi/Lambda*np.sqrt(Cepsilon[dd])
+    kd=2*np.pi/Lambda*np.sqrt(Cepsilon[dd]) # L  x 1
     xp=kd*dip_pos
     nNmax=ME[0].shape[1]
     RBd=GenRBall.GenRBall(nNmax,xp)
@@ -101,7 +101,7 @@ def int_wszystko(Ca, Cepsilon, dd, dip_pos ,kL, Lambda, RBx,RBz,xk,zk,ME,MM,TE,T
     return (MRadPerp, MRadPara,MNRPerp,MNRPara,MTotPerp,MTotPara)  
  
 def em_int(wspE,wspM,k,RB,xp2inv,d_el,d_m,Dd_el,cc4,cc3,Cepsilon):
-    fi_el=(wspE[0]*RB[2] + wspE[1]*RB[0])/k
+    fi_el=(wspE[0]*RB[2] + wspE[1]*RB[0])/k #
     Dfi_el=(wspE[0]*RB[3] + wspE[1]*RB[1])/k
     fi_m=(wspM[0]*RB[2] + wspM[1]*RB[0])/k
     Dfi_m=(wspM[0]*RB[3] + wspM[1]*RB[1])/k

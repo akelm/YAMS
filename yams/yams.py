@@ -127,7 +127,8 @@ class App:
         self.threadhandle=None
         self.threadpid=None
         self.dipole=None
-        
+        self.raw_results=''
+        self.foto_results=''
 #==============================================================================
 #          starting gui
 #==============================================================================
@@ -212,8 +213,10 @@ class App:
         self.filemenu = Menu(self.menubar, tearoff=0)
         self.filemenu.add_command(label="Load input file", command=self.LoadFile)
         self.filemenu.add_command(label="Save input file", command=self.SaveFileNow)
-        self.filemenu.add_command(label="Load raw results", command=lambda: self.LoadResFile(self.raw_results,"Save raw results as"))
-        self.filemenu.add_command(label="Save raw results as", command=lambda: self.SaveResNow(self.raw_results),state="disabled")
+        self.filemenu.add_command(label="Load raw results", command=lambda: 
+            self.LoadResFile(self.raw_results,"Save raw results as"))
+        self.filemenu.add_command(label="Save raw results as", command=lambda:
+            self.SaveResNow(self.raw_results),state="disabled")
         self.filemenu.add_command(label="Load photophysics definition", command=self.LoadPhotoFile)
         self.filemenu.add_command(label="Load photophysics results", command=lambda: self.LoadResFile(self.foto_results,"Save photophysics results as"))
         self.filemenu.add_command(label="Save photophysics results as", command=lambda: self.SaveResNow(self.raw_results),\
@@ -312,13 +315,13 @@ class App:
         ttk.Label(frame,text='core side',padding=(5,5,10,10))\
                 .grid(column=3,row=5,sticky=(NW))
         self.button_up = ttk.Button(frame, text='up',padding=(5,5,10,10), \
-                               command=lambda: self.l.shiftSelectionDown())
+                               command=lambda: self.ShiftSel('Up'))
         self.button_up.grid(column=3,row=6,sticky=(W))
         self.button_down = ttk.Button(frame, text='down',padding=(5,5,10,10), \
-                                 command=lambda: self.l.shiftSelectionUp())
+                                 command=lambda: self.ShiftSel('Down'))
         self.button_down.grid(column=3,row=7,sticky=(W))
         self.button_delete = ttk.Button(frame, text='remove',padding=(5,5,10,10), \
-                                   command=lambda: self.l.DeleteSelection())
+                                   command=lambda: self.RemoveButtonCommand())
         self.button_delete.grid(column=3,row=8,sticky=(W))
         ttk.Label(frame,text='medium side',padding=(5,5,10,10))\
             .grid(column=3,row=9,sticky=(SW))
@@ -621,8 +624,8 @@ class App:
         self.logger = logging.getLogger('test')
         self.logger.setLevel(logging.DEBUG) 
         self.logger.addHandler(self.logs.logging_handler)
-        sys.stdout = LoggerWriter(self.logger.debug)
-        sys.stderr = LoggerWriter(self.logger.warning)
+#        sys.stdout = LoggerWriter(self.logger.debug)
+#        sys.stderr = LoggerWriter(self.logger.warning)
         self.logger.info('Program started')        
         
         
@@ -754,7 +757,6 @@ class App:
         
     #%%
     def RunFoto(self):
-        self.logger.info('Photophysics calculation started')
         def run_code(self):
 #            print(self.threadhandle)
 #            self.butt_run.state(["disabled"])
@@ -817,13 +819,14 @@ class App:
 #        print(subproc.pid)
 #        self.subproc_pid=subproc.pid
         self.threadhandle=Thread(target=run_code,args=(self,))
+        self.logger.info('Photophysics calculation started')
 #        print(self.threadhandle)
         self.threadhandle.start()
         self.logger.info('Photophysics calculation finished')
 #        porph_int(picklefile=self.picklefile,savename=self.ifsaveres.get() and self.entry_saveres.get() or [])
       #%%  
     def Run(self,fotof_files=None):
-        self.logger.info('Mie theory calculation started')
+        
         def run_code(self):
 #            print(self.threadhandle)
 #            self.butt_run.state(["disabled"])
@@ -864,7 +867,8 @@ class App:
                             'savename':savename,\
                             'mat_dict':self.mat_dict,'mat_sizecor_dict':self.mat_sizecor_dict,\
                             'mat_tempcor_dict':self.mat_tempcor_dict,'fotof_files':fotof_files}
-            p = Process(target=fluoroph1layer2, kwargs=kwargs)
+            p = Process(target=fluoroph1layer2, args=(),kwargs=kwargs)
+            
             p.start()
             self.subproc_pid=p.pid
             p.join() # this blocks until the process terminates
@@ -889,6 +893,7 @@ class App:
 #        self.subproc_pid=subproc.pid
         self.threadhandle=Thread(target=run_code,args=(self,))
 #        print(self.threadhandle)
+        self.logger.info('Mie theory calculation started')
         self.threadhandle.start()
 #        curpid=os.getpid()
 #        print('currpid ',curpid)
@@ -952,12 +957,14 @@ class App:
         if f:
             entry.delete(0, END)
             entry.insert(0,f)
+            self.logger.info('Emission file selected')
  
     def SaveFile(self,entry):
         f = filedialog.asksaveasfilename(defaultextension=".yaml",initialdir='../results/')
         if f:
             entry.delete(0, END)
             entry.insert(0,f)
+            self.logger.info('Savename selected')
     def SaveFileNow(self):
         f = filedialog.asksaveasfilename(defaultextension=".yaml",initialdir="../input_files/",\
                                        filetypes=(("yaml files","*.yaml"),("all files","*.*")))
@@ -965,7 +972,8 @@ class App:
            datastr1=self.make_dict()
            datastr1=check_input(datastr1,dict(zip(self.mat_list,repeat(0))),self.mat_sizecor_dict.keys())
            with open(f, 'w', encoding='utf8') as outfile:
-              yaml.dump(datastr1, outfile, default_flow_style=False, allow_unicode=True) 
+              yaml.dump(datastr1, outfile, default_flow_style=False, allow_unicode=True)
+           self.logger.info('Input file saved')   
     def SaveResNow(self,resfile):
         if resfile:
             f = filedialog.asksaveasfilename(defaultextension=".pickle",initialdir="../results/",\
@@ -1101,6 +1109,15 @@ class App:
         self.l.insert(END, String)
         self.l.UpdateNumbering()
         self.logger.info('Added layer')
+        
+    def RemoveButtonCommand(self):
+        self.l.DeleteSelection()
+        self.logger.info('Removed layer')
+        
+    def ShiftSel(self,direction):
+        str1='self.l.shiftSelection'+direction+'()'
+        eval(str1)
+        self.logger.info('Moved layer '+direction)
         
     def AddFoto(self):
         try:

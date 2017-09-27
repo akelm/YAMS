@@ -10,10 +10,10 @@ from porph_int import porph_int
 import scipy.io as sio
 import os
 import multiprocessing as mp
-import time
+#import time
 import pickle
 #import yaml
-from multiprocessing.pool import ThreadPool
+#from multiprocessing.pool import ThreadPool
 #import threading
 
 class LoopObj:
@@ -79,6 +79,7 @@ class LoopObj:
 
 def fluoroph1layer2(parfile=[],data=[],savename=None,mat_dict=None,\
                     mat_sizecor_dict=None,mat_tempcor_dict=None,fotof_files=None):
+#    print("started fluoroph1layer2")
 #    print(parent_tid)
     if (parfile and data):
         raise Exception("two param input sources")

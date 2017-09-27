@@ -7,7 +7,7 @@ taken from internets
 """
 from tkinter import *
 from tkinter import ttk
-
+import numpy as np
 
 class Drag_and_Drop_Listbox(Listbox):
     """ A tk listbox with drag'n'drop reordering of entries. """
@@ -64,21 +64,6 @@ class Drag_and_Drop_Listbox(Listbox):
         ''' shifts item up or down in listbox '''
         #i = self.nearest(event.y)
         sel_items = self.curselection()
-        for k in sel_items[::-1]:
-            if k<(self.size()-1) & ~self.selection_includes(k+1):
-                # checks if k can be moved without swapping
-               x = self.get(k)
-               self.delete(k)
-               self.insert(k+1, x)
-               self.selection_set(k+1)
-        self.UpdateNumbering()
-
-              
-    def shiftSelectionDown(self):
-        self.AddParams()
-        ''' shifts item up or down in listbox '''
-        #i = self.nearest(event.y)
-        sel_items = self.curselection()
         
         for k in sel_items:
             if k>0 & ~self.selection_includes(k-1):
@@ -88,6 +73,22 @@ class Drag_and_Drop_Listbox(Listbox):
                self.insert(k-1, x)
                self.selection_set(k-1)
 
+        self.UpdateNumbering()
+        
+
+              
+    def shiftSelectionDown(self):
+        self.AddParams()
+        ''' shifts item up or down in listbox '''
+        #i = self.nearest(event.y)
+        sel_items = self.curselection()
+        for k in sel_items[::-1]:
+            if k<(self.size()-1) & ~self.selection_includes(k+1):
+                # checks if k can be moved without swapping
+               x = self.get(k)
+               self.delete(k)
+               self.insert(k+1, x)
+               self.selection_set(k+1)
         self.UpdateNumbering()
                
     def DeleteSelection(self) :

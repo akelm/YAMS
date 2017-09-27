@@ -1,5 +1,6 @@
 import numpy as np
 from scipy import special
+from sum_conv import sum_conv
 
 def wzm_layer(ME1,MM1, MEdd, MMdd,Lambda,odl, Ceps,pin, taun, bn1mat):
 ## wzmocnienie pola w srodku warstwy
@@ -33,11 +34,11 @@ def wzm_layer(ME1,MM1, MEdd, MMdd,Lambda,odl, Ceps,pin, taun, bn1mat):
 def PweEgenThetaAllPhi(Lambda,epsilon,cn1,dn1,r0,theta,sBessel,pin,taun):
     nNmax=cn1.shape[1]
     
-    nm1=np.arange(0,nNmax+1)[None,:,None]
-    n=nm1[:,1:,:]
+    nm1=np.arange(0,nNmax+1)[None,:,None] # 1 x nNmax+1
+    n=nm1[:,1:,:] # 1 x nNmax
 
-    cffnr=np.sqrt((2*n+1)/(4*np.pi)) 
-    mun=cffnr/(n*(n+1))
+    cffnr=np.sqrt((2*n+1)/(4*np.pi))  # 1 x nNmax
+    mun=cffnr/(n*(n+1)) # 1 x nNmax
     
     if r0==0:
         Esf= (dn1[:,0,:]/np.sqrt(3*np.pi))[:,None]
@@ -50,34 +51,42 @@ def PweEgenThetaAllPhi(Lambda,epsilon,cn1,dn1,r0,theta,sBessel,pin,taun):
             dn1Z1=0 # [L x 1]
             icn1Z0=cn1 # [L x nNmax]
             dn1Z2=dn1 # [L x nNmax]
-            mun=mun*((-1j)**(n+1))
+            mun=mun*((-1j)**(n+1)) # 1 x nNmax
         else:
             rho=(2*np.pi* np.sqrt(epsilon)/Lambda*r0)[:,:,None] # column [L x 1]
-            f=special.spherical_jn(nm1,rho)
+            f=special.spherical_jn(nm1,rho) # [L x nNmax+1]
             
             if sBessel=='h1':
-                f=f+1j*special.spherical_yn(nm1,rho)
+                f=f+1j*special.spherical_yn(nm1,rho) # [L x nNmax+1]
             
-            stZnAll_Z0=f[:,1:,:]
-            stZnAll_Z1=stZnAll_Z0/rho
-            stZnAll_Z2=f[:,:-1,:] - nm1[:,1:,:]*stZnAll_Z1
+            stZnAll_Z0=f[:,1:,:] # [L x nNmax]
+            stZnAll_Z1=stZnAll_Z0/rho # [L x nNmax]
+            stZnAll_Z2=f[:,:-1,:] - nm1[:,1:,:]*stZnAll_Z1 # [L x nNmax]
         
             dn1Z1=dn1*stZnAll_Z1 # [L x nNmax]
             icn1Z0=1j*cn1*stZnAll_Z0 # [L x nNmax]
             dn1Z2=dn1*stZnAll_Z2 # [L x nNmax]
+        # pin   1 x T x N
+#        vecNdep=dn1Z1*cffnr  # [L x nNmax x 1]
+#        Ersum=np.matmul(pin,vecNdep) 
+        vecNdep=(dn1Z1*cffnr).swapaxes(1,2)  # [L x 1 x nNmax]
+        Ersum=sum_conv(pin*vecNdep,2) 
         
-        vecNdep=dn1Z1*cffnr
-        Ersum=np.matmul(pin,vecNdep)
+#        vecNdep=icn1Z0*mun # [L x nNmax]
+#        vecNdep2=dn1Z2*mun # [L x nNmax]
+        vecNdep=(icn1Z0*mun).swapaxes(1,2)  # [L x 1 x nNmax]
+        vecNdep2=(dn1Z2*mun).swapaxes(1,2)  # [L x 1 x nNmax]
         
-        vecNdep=icn1Z0*mun
-        vecNdep2=dn1Z2*mun
-        
-        tmp1=np.matmul(pin, vecNdep)
-        tmp2=np.matmul(taun, vecNdep2)
+#        tmp1=np.matmul(pin, vecNdep)
+#        tmp2=np.matmul(taun, vecNdep2)
+        tmp1=sum_conv(pin*vecNdep,2) 
+        tmp2=sum_conv(taun*vecNdep2,2)
         Etsum=tmp1+tmp2
         
-        tmp1=np.matmul(taun, vecNdep)
-        tmp2=np.matmul(pin, vecNdep2)
+#        tmp1=np.matmul(taun, vecNdep)
+#        tmp2=np.matmul(pin, vecNdep2)
+        tmp1=sum_conv(pin*vecNdep2,2) 
+        tmp2=sum_conv(taun*vecNdep,2)
         Efsum=tmp1+tmp2
         
         Ecr=-2*np.sin(theta)*Ersum

@@ -6,52 +6,55 @@ Created on Mon Sep 25 15:35:29 2017
 @author: ania
 """
 import numpy as np
-from sklearn.utils.extmath import cartesian
+#from sklearn.utils.extmath import cartesian
 
 def sum_conv(macierz,kierunek):
     """
     find convergent part of the series
     and sums the elements using Kahan summation algorithm
     """
+    threshold=0.01
     # size of matrix without direction kierunek
     size_m=list(macierz.shape)
     seq_len=size_m[kierunek]
     size_m[kierunek]=1
-    
-#==============================================================================
-#     # checking where to end summation
-#==============================================================================
+    #==============================================================================
+    #     # checking where to end summation
+    #==============================================================================
     # matrix with consecutive sums of elements
     macierz_c=np.cumsum(macierz,kierunek)
-    # normalized gradient
-    diff_mat=np.abs(np.gradient(macierz_c,axis=kierunek)/macierz_c)
-    slices=list(map(slice,size_m))
-    # reverse order for axis kierunek
-    slices[kierunek]=slice(seq_len,-1,-1)
-    # indices where to end summation
-    index_mat=np.expand_dims( # expanding dims to match dimensions of macierz
-        seq_len-1-np.nanargmax( # translating indice to non-reverse direciton
-                              # nargmax find first largest element, here: 1
-        (diff_mat<=0.01)      # norm gradient must be below 0.01 at the end of series
-              ,axis=kierunek),
-                    kierunek).repeat(seq_len,kierunek) # matching size of macierz
-#==============================================================================
-#     # masking the non-convergent tail
-#==============================================================================
-    # shape for placing vector on the rigth position
-    new_shape=np.ones(len(size_m),dtype=int)
-    new_shape[kierunek]=seq_len
-    # matrix with range(seq) in the axis kierunek
-    cmp_mat=np.ones(size_m)*(np.arange(seq_len).reshape(new_shape))
-    # bool mask to multiply matrix
-    index_mask= (cmp_mat <=index_mat)
-    # zeroes the non-convergent tail
-    matrix_for_multi=index_mask*macierz
-#==============================================================================
-#     # Kahan summation
-#==============================================================================
-    macierz_res=kahansum_mat(matrix_for_multi,kierunek)
-
+#    there are no zeros in macierz_c
+    if not np.sum(macierz_c==0):
+        # normalized gradient
+        diff_mat=np.abs(np.gradient(macierz_c,axis=kierunek)/macierz_c)
+        slices=list(map(slice,size_m))
+        # reverse order for axis kierunek
+        slices[kierunek]=slice(seq_len,-1,-1)
+        # indices where to end summation
+        index_mat=np.expand_dims( # expanding dims to match dimensions of macierz
+            seq_len-1-np.nanargmax( # translating indice to non-reverse direciton
+                                  # nargmax find first largest element, here: 1
+            (diff_mat<=threshold)      # norm gradient must be below 0.01 at the end of series
+                  ,axis=kierunek),
+                        kierunek).repeat(seq_len,kierunek) # matching size of macierz
+    #==============================================================================
+    #     # masking the non-convergent tail
+    #==============================================================================
+        # shape for placing vector on the rigth position
+        new_shape=np.ones(len(size_m),dtype=int)
+        new_shape[kierunek]=seq_len
+        # matrix with range(seq) in the axis kierunek
+        cmp_mat=np.ones(size_m)*(np.arange(seq_len).reshape(new_shape))
+        # bool mask to multiply matrix
+        index_mask= (cmp_mat <=index_mat)
+        # zeroes the non-convergent tail
+        matrix_for_multi=index_mask*macierz
+    #==============================================================================
+    #     # Kahan summation
+    #==============================================================================
+        macierz_res=kahansum_mat(matrix_for_multi,kierunek)
+    else:
+        macierz_res=kahansum_mat(macierz,kierunek)
         
     
 #    macierz_c=np.cumsum(macierz,kierunek)

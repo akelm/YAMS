@@ -120,6 +120,7 @@ class App:
             self.mat_dict=yaml.load(stream)
         with open('../pkg_resources/mat_tempcor.yaml') as stream:
             self.mat_tempcor_dict=yaml.load(stream)
+
         # list of photophysics def files
         self.foto_files=glob.glob('../pkg_resources/photophysics/*.yaml')
         
@@ -378,12 +379,31 @@ class App:
         ttk.Label(frame,text='Layer containing dipole: ',\
           padding=(5,5,10,10)).grid(column=0,row=6,columnspan=3,sticky="w")
 
-        ttk.Label(frame,text='Dipole distance from the inner bonduary (or origin) / nm:',\
+        ttk.Label(frame,text='Dipole distance from its inner bonduary (or origin) :',\
           padding=(5,5,10,10)).grid(column=0,row=7,columnspan=3,sticky="w")
         
-        self.dipsep_list=(1,2,5,10,20,30,40,50)
-        self.dipsep= MyCombobox(frame, values=self.dipsep_list,default_val=1)
-        self.dipsep.grid(column=3,row=7)
+        ttk.Label(frame,text='from /nm',padding=(5,5,10,10))\
+            .grid(column=1,row=8)
+        ttk.Label(frame,text='to /nm',padding=(5,5,10,10))\
+        .grid(column=2,row=8)
+        ttk.Label(frame,text='every /nm',padding=(5,5,10,10))\
+        .grid(column=3,row=8)
+        
+        self.dipfrom_list=tuple(range(1,11))
+        self.dipfromm= MyCombobox(frame, values=self.dipfrom_list,default_val=1)
+        self.dipfromm.grid(column=1,row=9)
+        
+        self.dipto_list=tuple(range(10,50,5))
+        self.diptoo= MyCombobox(frame, values=self.dipto_list,default_val=10)
+        self.diptoo.grid(column=2,row=9)
+        
+        self.dipevery_list=(1,2,5,10)
+        self.dipeveryy= MyCombobox(frame, values=self.dipevery_list,default_val=1)
+        self.dipeveryy.grid(column=3,row=9)
+        
+#        self.dipsep_list=(1,2,5,10,20,30,40,50)
+#        self.dipsep= MyCombobox(frame, values=self.dipsep_list,default_val=1)
+#        self.dipsep.grid(column=3,row=9)
         
     def create_photoph(self,frame):
         
@@ -718,20 +738,30 @@ class App:
             """
             pattern=re.compile(str1,re.VERBOSE)
             dipolenum=re.search('^\d+',self.dipole.get()).group(0)
+            keyes=('from','to','every')
             for item in self.l.get(0,END):
-                lsplit=list(pattern.search(item).groups())
-                lsplit.insert(4,{'dipole':float(self.dipsep.get())} if lsplit[0]==dipolenum else None )
                 ldict={}
-                ldict['material']=lsplit[1]
+                lsplit=list(pattern.search(item).groups())
+                if lsplit[0]==dipolenum:
+                    rdict={'from':float(self.dipfromm.get()),'to':float(self.diptoo.get()),\
+                           'every':float(self.dipeveryy.get())}
+                    dipdict={'range':rdict}
+#                    inserting dipole right after nonlocal correction
+                    lsplit.insert(4,{'dipole':dipdict})    
+                else:
+                    lsplit.insert(4,None)
+#               creating dict to every layer
+                
+                ldict['material']=lsplit[1]               
                 list_attr=list(filter(None,lsplit[2:5]))
                 if list_attr:
                     ldict['attributes']=list_attr
                 if list(filter(None,lsplit[5:8])):
-                    keyes=('from','to','every')
                     rdict=dict(zip(keyes,list(map(float,lsplit[5:]))))
                     ldict['range']=rdict
                 layerslist.append(ldict)
-            datastr1['layers']=layerslist        
+            datastr1['layers']=layerslist
+#            print(datastr1)
             return datastr1
     #%%
     def results_size(self):
@@ -792,8 +822,9 @@ class App:
 #                    yaml.dump(datastr1, outfile, default_flow_style=False, allow_unicode=True)
             savename=self.entry_savefoto.get()
             if not savename:
-                savename=self.savefoto_default
-            kwargs={'picklefile':self.picklefile,\
+                savename=self.raw_results
+#            print('raw_results '+self.raw_results)
+            kwargs={'picklefile':self.raw_results,\
                             'savename':savename,\
                             'fotof_files':self.mlb.getcurselection(0)}
             p = Process(target=porph_int, kwargs=kwargs)
@@ -815,6 +846,7 @@ class App:
             self.runmenu.entryconfigure("Stop",state="disabled")
             self.filemenu.entryconfigure("Save photophysics results as",state="normal")
             self.foto_results=savename
+            self.logger.info('Photophysics calculation finished')
 #        subproc=subprocess.run(["ls", "-l"])
 #        print(subproc.pid)
 #        self.subproc_pid=subproc.pid
@@ -822,7 +854,7 @@ class App:
         self.logger.info('Photophysics calculation started')
 #        print(self.threadhandle)
         self.threadhandle.start()
-        self.logger.info('Photophysics calculation finished')
+        
 #        porph_int(picklefile=self.picklefile,savename=self.ifsaveres.get() and self.entry_saveres.get() or [])
       #%%  
     def Run(self,fotof_files=None):
@@ -970,6 +1002,7 @@ class App:
                                        filetypes=(("yaml files","*.yaml"),("all files","*.*")))
         if f:
            datastr1=self.make_dict()
+#           print(datastr1)
            datastr1=check_input(datastr1,dict(zip(self.mat_list,repeat(0))),self.mat_sizecor_dict.keys())
            with open(f, 'w', encoding='utf8') as outfile:
               yaml.dump(datastr1, outfile, default_flow_style=False, allow_unicode=True)
@@ -1018,7 +1051,10 @@ class App:
             self.filemenu.entryconfigure(sstr,state="normal")
             if sstr=="Save raw results as":
                 self.runmenu.entryconfigure("Run photophysics",state="normal")
-        self.logger.info('Loaded results file')
+                self.raw_results=f
+            if sstr=="Save photophysics results as":
+                self.foto_results=f
+            self.logger.info('Loaded results file')
     
     def clear_entries(self):
         for obj in (self.fotoqy_entry,self.fotoname_entry,self.fotoem_entry,self.fototdm_entry):
@@ -1081,7 +1117,10 @@ class App:
                      dip_dict={} if not dic_pos_ind else layer['attributes'][dic_pos_ind[0]]
                      if 'dipole' in dip_dict.keys():
                         dip_num=k
-                        self.dipsep.set(str(dip_dict['dipole']))
+                        self.dipfromm.set(dip_dict['dipole']['range']['from'])
+                        self.diptoo.set(dip_dict['dipole']['range']['to'])
+                        self.dipeveryy.set(dip_dict['dipole']['range']['every'])
+#                        self.dipsep.set(str(dip_dict['dipole']))
                      str_pos_ind=find_ind(layer['attributes'],str)
                      if 'size correction' in map(layer['attributes'].__getitem__,str_pos_ind):
                          strr+=' size correction'

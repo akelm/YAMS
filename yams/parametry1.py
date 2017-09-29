@@ -54,7 +54,12 @@ def check_input(main_dict,mat_dict_keys,mat_sizecor_dict_keys):
                     dip_count+=1
                     lower_bound=float("inf") if not 'range' in layer.keys() \
                         else min(layer['range']['from'],layer['range']['to'])
-                    if not 0 <= layer['attributes'][dic_pos_ind[0]]['dipole'] <= lower_bound:
+                    dip_rdict=layer['attributes'][dic_pos_ind[0]]['dipole']['range']
+                    if not 0<= dip_rdict['from'] <=lower_bound:
+                        dipole_position=False
+                    if not 0<= dip_rdict['to'] <=lower_bound:
+                        dipole_position=False
+                    if dip_rdict['every']==0:
                         dipole_position=False
                 if layer['material'] not in mat_sizecor_dict_keys and \
                 attr_set.intersection(set(map(layer['attributes'].__getitem__,str_pos_ind))):
@@ -86,6 +91,26 @@ def check_input(main_dict,mat_dict_keys,mat_sizecor_dict_keys):
             # dict with sorted 'from' and 'to'
             temp_dict=dict(zip(wave_vals,sorted(map(main_dict['layers'][k]['range'].get, wave_vals))))
             main_dict['layers'][k]['range'].update(temp_dict)
+            if 'attributes' in main_dict['layers'][k].keys():
+                dic_pos_ind=find_ind(main_dict['layers'][k]['attributes'],dict)
+                dic={} if not dic_pos_ind else layer['attributes'][dic_pos_ind[0]]
+                if 'dipole' in dic.keys():
+#                    print(main_dict['layers'][k]['attributes'])
+#                    print(abs(dic['dipole']['range']['every']))
+                    main_dict['layers'][k]['attributes'][dic_pos_ind[0]]['dipole']['range']['every']=\
+                    abs(dic['dipole']['range']['every'])
+                    # dict with sorted 'from' and 'to'
+                    temp_dict=dict(zip(wave_vals,sorted(map(dic['dipole']['range'].get, wave_vals))))
+                    main_dict['layers'][k]['attributes'][dic_pos_ind[0]]['dipole']['range'].update(temp_dict)
+        if 'attributes' in main_dict['layers'][-1].keys():
+            dic_pos_ind=find_ind(main_dict['layers'][-1]['attributes'],dict)
+            dic={} if not dic_pos_ind else layer['attributes'][dic_pos_ind[0]]
+            if 'dipole' in dic.keys():
+                main_dict['layers'][-1]['attributes'][dic_pos_ind[0]]['dipole']['range']['every']=abs(dic['dipole']['range']['every'])
+                # dict with sorted 'from' and 'to'
+                temp_dict=dict(zip(wave_vals,sorted(map(main_dict['layers'][-1]['attributes'][dic_pos_ind[0]]['dipole']['range'].get, wave_vals))))
+                main_dict['layers'][-1]['attributes'][dic_pos_ind[0]]['dipole']['range'].update(temp_dict)
+            
 #            map(main_dict['layers'][k]['range'].__setitem__, wave_vals,
 #            sorted(map(main_dict['layers'][k]['range'].get, wave_vals)))
             
@@ -119,7 +144,7 @@ def parametry1(data, mat_dict, mat_sizecor_dict,mat_tempcor_dict):
     tempcor_init=[]
     Cepsilon_init=[]
     dd_init=None
-    dip_pos_init=None
+    dip_range_init=None
     rho_rel=1
     # dictionary with default parameters, by search keys
     
@@ -154,7 +179,7 @@ def parametry1(data, mat_dict, mat_sizecor_dict,mat_tempcor_dict):
             dip_dict={} if not dic_pos_ind else dic['attributes'][dic_pos_ind[0]]
             if 'dipole' in dip_dict.keys():
                 dd_init=k
-                dip_pos_init=dip_dict['dipole']
+                dip_range_init=zakres(dip_dict['dipole']['range'])
             if 'nonlocal correction' in map(dic['attributes'].__getitem__,str_pos_ind):
                 nielokalne_init.append(k)
             if 'size correction' in map(dic['attributes'].__getitem__,str_pos_ind):
@@ -172,12 +197,13 @@ def parametry1(data, mat_dict, mat_sizecor_dict,mat_tempcor_dict):
         Cepsilon_init.append( ceps )
     else:
         Cepsilon_init.append( give_eps(mat_dict[dic['material']]['file'],Lambda) )
+    # last layer
     if 'attributes' in dic.keys():
         dic_pos_ind=find_ind(dic['attributes'],dict)
         dip_dict={} if not dic_pos_ind else dic['attributes'][dic_pos_ind[0]]
         if 'dipole' in dip_dict.keys():
             dd_init=len(layers)-1;
-            dip_pos_init=dip_dict['dipole']    
+            dip_range_init=zakres(dip_dict['dipole']['range'])
     
     # generuje liste interfejsow
     Camat=cartesian(Ca_init)
@@ -186,7 +212,7 @@ def parametry1(data, mat_dict, mat_sizecor_dict,mat_tempcor_dict):
     #print(nNmax,Lambda[0],Cepsilon_init[0][0],Camat[0][0],dd_init,\
     #            nielokalne_init,sizecor_init,T,layers) 
     return (nNmax,Lambda,Cepsilon_init,Camat,dd_init,\
-                nielokalne_init,sizecor_init,tempcor_init,T,pin,taun,bn1mat,layers,dip_pos_init,rho_rel)    
+                nielokalne_init,sizecor_init,tempcor_init,T,pin,taun,bn1mat,layers,dip_range_init,rho_rel)    
 
 
 def zakres(dic):

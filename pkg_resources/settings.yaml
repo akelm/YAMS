@@ -1,18 +1,24 @@
+# whether to work in multiprocessing mode
+multiprocessing: True
+
 # truncation of the expansion series if it becomes divergent
 truncation: True
 # fraction for truncation
-faction: 0.05
+threshold : 0.05
+# lowest n that can be truncated
+earliest: 5
+# use Kahan summation algorithm
+kahan: True
+
 # whether to plot images in photophysics
 images: True
 # wavelength of excitation for plotting
 exc:
-   -440
-   -500
-   -550
+   - 440
+   - 500
+   - 550
 # wavelength of emission for plotting
 em:
-   -550
-   -600
-   -650
-# whether to work in multiprocessing mode
-multiprocessing: True
+   - 550
+   - 600
+   - 640

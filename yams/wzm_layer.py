@@ -2,7 +2,7 @@ import numpy as np
 from scipy import special
 from sum_conv import sum_conv
 
-def wzm_layer(ME1,MM1, MEdd, MMdd,Lambda,odl, Ceps,pin, taun, bn1mat):
+def wzm_layer(ME1,MM1, MEdd, MMdd,Lambda,odl, Ceps,pin, taun, bn1mat,settings):
 ## wzmocnienie pola w srodku warstwy
 # (Cst{1}.ME,Cst{1}.MM, Cst{dd}.ME, Cst{dd}.MM,...
 #            lambda, dip_pos ,Cepsilon{dd},theta,stPinTaun )
@@ -12,12 +12,12 @@ def wzm_layer(ME1,MM1, MEdd, MMdd,Lambda,odl, Ceps,pin, taun, bn1mat):
     (Ecr_j,Ect_j,Esf_j)=PweEgenThetaAllPhi(Lambda,Ceps,\
     bn1mat*(MMdd[:,:,0,0] - MMdd[:,:,0,1]*MM1[:,:,1,0]/MM1[:,:,1,1])[:,:,None],\
     bn1mat*(MEdd[:,:,0,0] - MEdd[:,:,0,1]*ME1[:,:,1,0]/ME1[:,:,1,1])[:,:,None],\
-    odl,theta,'j',pin,taun) # [L x 1 x T]
+    odl,theta,'j',pin,taun,settings) # [L x 1 x T]
 
     (Ecr_h,Ect_h,Esf_h)=PweEgenThetaAllPhi(Lambda,Ceps,\
     bn1mat*(MMdd[:,:,1,0]- MMdd[:,:,1,1]*MM1[:,:,1,0]/MM1[:,:,1,1])[:,:,None],\
     bn1mat*(MEdd[:,:,1,0] - MEdd[:,:,1,1]*ME1[:,:,1,0]/ME1[:,:,1,1])[:,:,None],\
-    odl,theta,'h1',pin,taun) # [L x 1 x T]
+    odl,theta,'h1',pin,taun,settings) # [L x 1 x T]
 
 
     Fexcperp= 3/2*np.matmul(np.absolute(Ecr_j+Ecr_h)**2, np.sin(theta)) \
@@ -29,9 +29,9 @@ def wzm_layer(ME1,MM1, MEdd, MMdd,Lambda,odl, Ceps,pin, taun, bn1mat):
 
     
     
-    return (Fexcperp[:,:,0],Fexcpara[:,:,0])
+    return (Fexcperp[:,0,0],Fexcpara[:,0,0])
 
-def PweEgenThetaAllPhi(Lambda,epsilon,cn1,dn1,r0,theta,sBessel,pin,taun):
+def PweEgenThetaAllPhi(Lambda,epsilon,cn1,dn1,r0,theta,sBessel,pin,taun,settings):
     nNmax=cn1.shape[1]
     
     nm1=np.arange(0,nNmax+1)[None,:,None] # 1 x nNmax+1
@@ -70,7 +70,7 @@ def PweEgenThetaAllPhi(Lambda,epsilon,cn1,dn1,r0,theta,sBessel,pin,taun):
 #        vecNdep=dn1Z1*cffnr  # [L x nNmax x 1]
 #        Ersum=np.matmul(pin,vecNdep) 
         vecNdep=(dn1Z1*cffnr).swapaxes(1,2)  # [L x 1 x nNmax]
-        Ersum=sum_conv(pin*vecNdep,2) 
+        Ersum=sum_conv(pin*vecNdep,2,settings) 
         
 #        vecNdep=icn1Z0*mun # [L x nNmax]
 #        vecNdep2=dn1Z2*mun # [L x nNmax]
@@ -79,14 +79,14 @@ def PweEgenThetaAllPhi(Lambda,epsilon,cn1,dn1,r0,theta,sBessel,pin,taun):
         
 #        tmp1=np.matmul(pin, vecNdep)
 #        tmp2=np.matmul(taun, vecNdep2)
-        tmp1=sum_conv(pin*vecNdep,2) 
-        tmp2=sum_conv(taun*vecNdep2,2)
+        tmp1=sum_conv(pin*vecNdep,2,settings) 
+        tmp2=sum_conv(taun*vecNdep2,2,settings)
         Etsum=tmp1+tmp2
         
 #        tmp1=np.matmul(taun, vecNdep)
 #        tmp2=np.matmul(pin, vecNdep2)
-        tmp1=sum_conv(pin*vecNdep2,2) 
-        tmp2=sum_conv(taun*vecNdep,2)
+        tmp1=sum_conv(pin*vecNdep2,2,settings) 
+        tmp2=sum_conv(taun*vecNdep,2,settings)
         Efsum=tmp1+tmp2
         
         Ecr=-2*np.sin(theta)*Ersum

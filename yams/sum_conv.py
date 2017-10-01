@@ -8,35 +8,38 @@ Created on Mon Sep 25 15:35:29 2017
 import numpy as np
 #from sklearn.utils.extmath import cartesian
 
-def sum_conv(macierz,kierunek):
+def sum_conv(macierz,kierunek,settings):
     """
     find convergent part of the series
     and sums the elements using Kahan summation algorithm
     """
-    threshold=0.01
-    # size of matrix without direction kierunek
-    size_m=list(macierz.shape)
-    seq_len=size_m[kierunek]
-    size_m[kierunek]=1
-    #==============================================================================
-    #     # checking where to end summation
-    #==============================================================================
-    # matrix with consecutive sums of elements
-    macierz_c=np.cumsum(macierz,kierunek)
-#    there are no zeros in macierz_c
-    if not np.sum(macierz_c==0):
+    if settings['truncation'] and not np.sum(np.abs(macierz)==0):
+        threshold=float(settings['threshold'])
+        earliest=float(settings['earliest'])
+        # size of matrix without direction kierunek
+        size_m=list(macierz.shape)
+        seq_len=size_m[kierunek]
+        size_m[kierunek]=1
+        #==============================================================================
+        #     # checking where to end summation
+        #==============================================================================
+        # matrix with consecutive sums of elements
+        macierz_c=np.cumsum(macierz,kierunek)
+    #    there are no zeros in macierz_c
         # normalized gradient
         diff_mat=np.abs(np.gradient(macierz_c,axis=kierunek)/macierz_c)
         slices=list(map(slice,size_m))
         # reverse order for axis kierunek
         slices[kierunek]=slice(seq_len,-1,-1)
         # indices where to end summation
-        index_mat=np.expand_dims( # expanding dims to match dimensions of macierz
+        index_mat1=np.expand_dims( # expanding dims to match dimensions of macierz
             seq_len-1-np.nanargmax( # translating indice to non-reverse direciton
                                   # nargmax find first largest element, here: 1
             (diff_mat<=threshold)      # norm gradient must be below 0.01 at the end of series
                   ,axis=kierunek),
                         kierunek).repeat(seq_len,kierunek) # matching size of macierz
+        # moving indices that are below earliest to earliest                           
+        index_mat=np.where(index_mat1>=earliest,index_mat1,earliest*np.ones(macierz.shape))
     #==============================================================================
     #     # masking the non-convergent tail
     #==============================================================================
@@ -48,14 +51,16 @@ def sum_conv(macierz,kierunek):
         # bool mask to multiply matrix
         index_mask= (cmp_mat <=index_mat)
         # zeroes the non-convergent tail
-        matrix_for_multi=index_mask*macierz
+        matrix_for_multi=np.nan_to_num(index_mask*macierz)
+    else:
+        matrix_for_multi=np.nan_to_num(macierz)
     #==============================================================================
     #     # Kahan summation
     #==============================================================================
+    if settings['kahan']:
         macierz_res=kahansum_mat(matrix_for_multi,kierunek)
     else:
-        macierz_res=kahansum_mat(macierz,kierunek)
-        
+        macierz_res=np.sum(matrix_for_multi,axis=kierunek)
     
 #    macierz_c=np.cumsum(macierz,kierunek)
 #    macierz_c_abs=np.abs(macierz_c)

@@ -1,6 +1,29 @@
+'''
+    YAMS -- yet another Mie smulator
+    Copyright (C) 2017 Anna Kelm
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+    Contact: annamariakelm@gmail.com, GitHub: https://github.com/akelm
+'''
+
+
 from tkinter import *
 from tkinter import ttk
 import tkinter.filedialog as filedialog
+from tkinter import messagebox
+import tkinter.scrolledtext as scrolledtext
 #from tkinter import filedialog
 import os
 import psutil
@@ -244,9 +267,10 @@ class App:
         self.menubar.add_cascade(label="Run", menu=self.runmenu)
         # Help
         self.helpmenu = Menu(self.menubar, tearoff=0)
-        self.helpmenu.add_command(label="README", command=[])
-        self.helpmenu.add_command(label="Licence", command=[])
-        self.helpmenu.add_command(label="References", command=[])
+        self.helpmenu.add_command(label="README", command=self.show_readme)
+        self.helpmenu.add_command(label="About", command=self.about)
+        self.helpmenu.add_command(label="License", command=self.show_license)
+        self.helpmenu.add_command(label="References", command=self.references)
         self.menubar.add_cascade(label="Help", menu=self.helpmenu)
 
         # display the menu
@@ -919,13 +943,19 @@ class App:
             self.runmenu.entryconfigure("Stop",state="disabled")           
             self.filemenu.entryconfigure("Save raw results as",state="normal")
             self.raw_results=savename
-            self.logger.info('Mie theory calculation finished')
+            if fotof_files==None:
+                self.logger.info('Mie theory calculation finished')
+            else:
+                self.logger.info('Mie theory and photophysics calculation finished')
 #        subproc=subprocess.run(["ls", "-l"])
 #        print(subproc.pid)
 #        self.subproc_pid=subproc.pid
         self.threadhandle=Thread(target=run_code,args=(self,))
 #        print(self.threadhandle)
-        self.logger.info('Mie theory calculation started')
+        if fotof_files==None:
+            self.logger.info('Mie theory calculation started')
+        else:
+            self.logger.info('Mie theory and photophysics calculation started')
         self.threadhandle.start()
 #        curpid=os.getpid()
 #        print('currpid ',curpid)
@@ -978,11 +1008,8 @@ class App:
             self.entry_savefoto.delete(0,END)
             self.entry_savefoto.insert(0,direct+'/res_'+now+'_photoph.pickle')
             self.logger.info('Names refreshed')
-            #%%
-    def about(self):
-        pass
-        
-        
+   
+   
  #%%       
     def OpenFile(self,entry):
         f = filedialog.askopenfilename(initialdir='../pkg_resources/photophysics')
@@ -1200,9 +1227,47 @@ class App:
         except (ValueError,FileNotFoundError,FileExistsError):
             pass
         
+    def about(self):
+#        self.toplev1=Toplevel(root)
+#        self.toplev1.wm_title('About')
+        with open('../pkg_resources/about', 'r') as myfile:
+            data=myfile.read()
+#        self.T = Text(self.toplev1)
+#        self.T.grid(row=0,column=0,sticky=(N,S,E,W))
+#        self.T.insert(END, data)
+#        self.T.config(justify=CENTER)
+#        self.T.state(["disabled"])
+        messagebox.showinfo("About",data)
         
+    def show_license(self):
+        self.toplev1=Toplevel(root)
+        self.toplev1.wm_title('License')
+        with open('../LICENSE', 'r') as myfile:
+            data=myfile.read()        
+        self.tekst=scrolledtext.ScrolledText(self.toplev1)
+        self.tekst.grid(row=0,column=0)
+        self.tekst.insert(INSERT,data)
+        self.tekst.configure(state='disabled')
         
+    def show_readme(self):
+        self.toplev1=Toplevel(root)
+        self.toplev1.wm_title('README')
+        with open('../README.md', 'r') as myfile:
+            data=myfile.read()        
+        self.tekst=scrolledtext.ScrolledText(self.toplev1)
+        self.tekst.grid(row=0,column=0)
+        self.tekst.insert(INSERT,data)
+        self.tekst.configure(state='disabled')
         
+    def references(self):
+        self.toplev1=Toplevel(root)
+        self.toplev1.wm_title('References')
+        with open('../pkg_resources/references/references', 'r') as myfile:
+            data=myfile.read()        
+        self.tekst=scrolledtext.ScrolledText(self.toplev1)
+        self.tekst.grid(row=0,column=0)
+        self.tekst.insert(INSERT,data)
+        self.tekst.configure(state='disabled')
 #%%
 if __name__ == "__main__":
     root = Tk()

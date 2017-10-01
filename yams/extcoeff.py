@@ -1,6 +1,6 @@
 import numpy as np
 from sum_conv import sum_conv
-def extcoeff_M(x,ME,MM):
+def extcoeff_M(x,ME,MM,settings):
     # ME,MM : ME[0],MM[0]
     # x : x[nK]
     nNmax=ME.shape[1]
@@ -12,18 +12,18 @@ def extcoeff_M(x,ME,MM):
     tmp1=np.absolute(-ME[:,:,1,0]/ME[:,:,1,1])**2
     tmp2=np.absolute(-MM[:,:,1,0]/MM[:,:,1,1])**2
     tmpMat= tmp1+tmp2 # [L x nNmax]
-    Qsca = 2* x2inv* sum_conv( np.nan_to_num(tmpMat*cc1),1) # [L x 1]
+    Qsca = 2* x2inv* sum_conv( tmpMat*cc1,1,settings) # [L x 1]
        # extinction efficiency
     tmp1=np.real(-ME[:,:,1,0]/ME[:,:,1,1])
     tmp2=np.real(-MM[:,:,1,0]/MM[:,:,1,1])
     tmpMat= tmp1+tmp2 # [L x nNmax]
-    Qext = -2* x2inv* sum_conv(np.nan_to_num(tmpMat*cc1),1) # [L x 1]
+    Qext = -2* x2inv* sum_conv(tmpMat*cc1,1,settings) # [L x 1]
     # absorption efficiency
     Qabs = Qext - Qsca
     # print(Qext.shape)
     return (np.real(Qext),np.real(Qsca),np.real(Qabs))
 
-def extcoeff_T(x,TE,TM):
+def extcoeff_T(x,TE,TM,settings):
     # ME,MM : ME[0],MM[0]
     # x : x[nK]
     nNmax=TE.shape[1]
@@ -36,11 +36,11 @@ def extcoeff_T(x,TE,TM):
     
     # scattering efficiency
     tmpMat= np.abs(BE)**2 + np.abs(BM)**2 # [L x nNmax]
-    Qsca = 2* x2inv* sum_conv(np.nan_to_num(tmpMat*cc1),1) # [L x 1]
+    Qsca = 2* x2inv* sum_conv(tmpMat*cc1,1,settings) # [L x 1]
     
     # extinction efficiency
     tmpMat= np.real(BE)+np.real(BM) # [L x nNmax]
-    Qext = -2* x2inv* sum_conv(np.nan_to_num(tmpMat*cc1),1) # [L x 1]
+    Qext = -2* x2inv* sum_conv(tmpMat*cc1,1,settings) # [L x 1]
     
     # absorption efficiency
     Qabs = Qext - Qsca

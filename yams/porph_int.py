@@ -21,7 +21,7 @@ def int_spectrum(indices,spectrum,factor):
     res=np.sum(enh*spectrum[None,:],1)/np.sum(spectrum) # D x 1
     return res
 
-def porph_int(results=[],data=[],picklefile=[],savename=None,rho_rel=1,dip_range=[],fotof_files=None):
+def porph_int(results=[],data=[],picklefile=[],savename=None,rho_rel=1,dip_range=[],fotof_files=None,settings=None):
     # loading pickle file
     if picklefile:
         with open(picklefile,'rb') as f:
@@ -41,7 +41,12 @@ def porph_int(results=[],data=[],picklefile=[],savename=None,rho_rel=1,dip_range
         rawname=os.path.splitext(filename)[0]        
     else:
         dirname='../results/'
-      
+    
+    # settings file
+    if not settings:
+        with open('../pkg_resources/settings.yaml') as stream:
+            settings=yaml.load(stream)
+    
     
     # wavelenghts from calculation
     Lambda=zakres(picklecontent['param']['wavelength'])
@@ -125,124 +130,137 @@ def porph_int(results=[],data=[],picklefile=[],savename=None,rho_rel=1,dip_range
         photoph['FGamma_'+sufix]=\
             photoph['Fexc_'+sufix]*(photoph['FQY_'+sufix].reshape([*matrix_size,photoph['dip_range'].size,1]))
     
-        # dictionary for saving
-        dict_keys=('Ftau','FQY','Frad','Fexc','FGamma')
-        dict_keys1=('Ftau_'+sufix,'FQY_'+sufix,'Frad_'+sufix,'Fexc_'+sufix,'FGamma_'+sufix)
-        mat_dict=dict(zip(dict_keys,map(locals().get,dict_keys)))
-        mat_dict1=dict(zip(dict_keys1,map(locals().get,dict_keys)))
-        # so much plots, so much fun
+#        # dictionary for saving
+#        dict_keys=('Ftau','FQY','Frad','Fexc','FGamma')
+#        dict_keys1=('Ftau_'+sufix,'FQY_'+sufix,'Frad_'+sufix,'Fexc_'+sufix,'FGamma_'+sufix)
+#        mat_dict=dict(zip(dict_keys,map(locals().get,dict_keys)))
+#        mat_dict1=dict(zip(dict_keys1,map(locals().get,dict_keys)))
         
-        labels={'FQY_'+sufix:'Quantum efficiency enhancement','Ftau_'+sufix:'Excited state lifetime reduction',\
-                'Frad_'+sufix:'Radiative decay rate enhancement','Fexc_'+sufix:'Excitation rate enhancement',\
-                'FGamma_'+sufix:'Total emission enhancement'}
-        ifspectra={'Frad_'+sufix:[550,650,640],'Fexc_'+sufix:[440,520,550],'FGamma_'+sufix:[440,520,550]}
-        
-        
-        w_start=Lambda[0]
-        w_every=Lambda[1]-Lambda[0] 
-        # checking what to plot
-        plt.ioff()
-        if sum(list(map(gt,[*matrix_size,photoph['dip_range'].size],repeat(1))))==1:
-            # normal 2D plot
-            # looking for which dimension
-            indd=list(map(gt,[*matrix_size,photoph['dip_range'].size],repeat(1))).index(True)
-            slice_1=np.zeros(len(matrix_size)+1,dtype=int).tolist()
-            slice_1[indd]=slice(0,[*matrix_size,photoph['dip_range'].size][indd])
-            if indd==len(matrix_size):
-                matx='dipole distance'
-                x_range=photoph['dip_range']
-            else:
-                matx=picklecontent['param']['layers'][indd]['material']
-                x_range=zakres(picklecontent['param']['layers'][indd]['range'])
-      
-            fig = plt.figure(figsize=(8,8*9/16))
-            ax = fig.add_subplot(111)
-            for key in labels.keys():
-                img_list=[]
-                title=[]
-                fig_sufix=[]
-                if key in ifspectra.keys():
-                    for wave in ifspectra[key]:
-                        if wave in Lambda:
-                            slice1=[*slice_1,int((wave-w_start)/w_every)]
-#                            print(slice1)
-#                            print(photoph[key].shape)
-#                            print(np.transpose(photoph[key][slice1]).shape)
-                            img_list.append(np.transpose(photoph[key][slice1]))
-                            title.append(labels[key]+' at '+str(wave)+' nm')
-                            fig_sufix.append(str(wave)+'_')
-                else:
-                    img_list=[np.transpose(photoph[key][slice_1])]
-                    title=[labels[key]]
-                    fig_sufix=['']
+        if settings['images']:
+            # so much plots, so much fun
             
-                for obj in zip(img_list,title,fig_sufix):
-#                    print(x_range)
-#                    print(obj[0].shape)
-#                    print(obj[1])
-#                    print(obj[2])
-                    imgplot = plt.plot(x_range,obj[0],'-k')
-                    ax.set_title(obj[1])
-                    ax.set_xlabel(matx+' core radius / nm' if indd==0 else matx+' layer thickness / nm')
-                    figname=key+'_'+obj[2] if not savename else dirname+key+'_'+obj[2]+rawname
-                    plt.savefig(figname+'.svg')
-                    plt.cla()
-#                    print(plt.get_fignums())
-            plt.close('all')
-#            print(plt.get_fignums())
-        if sum(list(map(gt,[*matrix_size,photoph['dip_range'].size],repeat(1))))>1:
-            # checking which two layers have most sizes
-            (largest_ind,largest_values)=zip(*sorted(list(enumerate([*matrix_size,photoph['dip_range'].size])),key=itemgetter(1),reverse=True))
-            # two largest ind
-            largest_ind=largest_ind[0:2]
-            largest_slice=[slice(0,largest_values[0]),slice(0,largest_values[1])]
-            # other indices
-            other_ind=largest_ind[2:]
-            matrix_size_other=largest_values[2:]
-            other_slice=list(map(round,(map(mul,repeat(0.5),matrix_size_other))))
-            comb_slices=[*largest_slice,*other_slice]
-            (_,sorted_slices)=zip(*sorted(list(zip(largest_ind,comb_slices)),key=itemgetter(0)))
-            largest_sorted=sorted(largest_ind)
-            matx=picklecontent['param']['layers'][largest_sorted[0]]['material']
-            maty=picklecontent['param']['layers'][largest_sorted[1]]['material']
-            x_from=picklecontent['param']['layers'][largest_sorted[0]]['range']['from']
-            x_to=picklecontent['param']['layers'][largest_sorted[0]]['range']['to']
-            y_from=picklecontent['param']['layers'][largest_sorted[1]]['range']['from']
-            y_to=picklecontent['param']['layers'][largest_sorted[1]]['range']['to']
-            extent_list=[x_from,x_to,y_from,y_to]
-    
-            fig = plt.figure(figsize=(8+1.7,8*(y_to-y_from)/(x_to-x_from)))  
-            ax = fig.add_subplot(111)
-            for key in labels.keys():
-                img_list=[]
-                title=[]
-                fig_sufix=[]    
-                if key in ifspectra.keys():
-                    for wave in ifspectra[key]:
-                        if wave in Lambda:
-                            slice1=[*sorted_slices,int((wave-w_start)/w_every)]
-                            img_list.append(np.transpose(photoph[key][slice1]))
-                            title.append(labels[key]+' at '+str(wave)+' nm')
-                            fig_sufix.append(str(wave)+'_')
+            labels={'FQY_'+sufix:'Quantum efficiency enhancement','Ftau_'+sufix:'Excited state lifetime reduction',\
+                    'Frad_'+sufix:'Radiative decay rate enhancement','Fexc_'+sufix:'Excitation rate enhancement',\
+                    'FGamma_'+sufix:'Total emission enhancement'}
+            ifspectra={'Frad_'+sufix:settings['em'],'Fexc_'+sufix:settings['exc'],'FGamma_'+sufix:settings['exc']}
+#            print(type(settings['em'][0]))
+            
+            w_start=Lambda[0]
+            w_every=Lambda[1]-Lambda[0] 
+            # checking what to plot
+            plt.ioff()
+            if sum(list(map(gt,[*matrix_size,photoph['dip_range'].size],repeat(1))))==1:
+                # normal 2D plot
+                # looking for which dimension
+                indd=list(map(gt,[*matrix_size,photoph['dip_range'].size],repeat(1))).index(True)
+                slice_1=np.zeros(len(matrix_size)+1,dtype=int).tolist()
+                slice_1[indd]=slice(0,[*matrix_size,photoph['dip_range'].size][indd])
+                if indd==len(matrix_size):
+                    matx='dipole distance'
+                    x_range=photoph['dip_range']
                 else:
-                    img_list=[np.transpose(photoph[key][sorted_slices])]
-                    title=[labels[key]]
-                    fig_sufix=['']
-                    
-                for obj in zip(img_list,title,fig_sufix):
-                    imgplot = plt.imshow(obj[0],cmap="jet", interpolation="bicubic",\
-                                         extent=extent_list)
-                    ax.set_title(obj[1])
-                    ax.invert_yaxis()
-                    ax.set_xlabel(matx+' core radius / nm' if largest_sorted[0]==0 else matx+' layer thickness / nm')
-                    ax.set_ylabel(maty+' layer thickness / nm')
-                    plt.colorbar()
-                    figname=key+'_'+obj[2] if not savename else dirname+key+'_'+obj[2]+rawname
-                    plt.savefig(figname+'.svg')
-                    plt.cla()
-#                    print(plt.get_fignums())
-            plt.close('all')
-#            print(plt.get_fignums())
+                    matx=picklecontent['param']['layers'][indd]['material']
+                    x_range=zakres(picklecontent['param']['layers'][indd]['range'])
+          
+                fig = plt.figure(figsize=(8,8*9/16))
+                ax = fig.add_subplot(111)
+                for key in labels.keys():
+                    img_list=[]
+                    title=[]
+                    fig_sufix=[]
+                    if key in ifspectra.keys():
+                        for wave in ifspectra[key]:
+                            if wave in Lambda.tolist():
+                                slice1=[*slice_1,int((wave-w_start)/w_every)]
+    #                            print(slice1)
+    #                            print(photoph[key].shape)
+    #                            print(np.transpose(photoph[key][slice1]).shape)
+                                img_list.append(np.transpose(photoph[key][slice1]))
+                                title.append(labels[key]+' at '+str(wave)+' nm')
+                                fig_sufix.append(str(wave)+'_')
+                    else:
+                        img_list=[np.transpose(photoph[key][slice_1])]
+                        title=[labels[key]]
+                        fig_sufix=['']
+                
+                    for obj in zip(img_list,title,fig_sufix):
+    #                    print(x_range)
+    #                    print(obj[0].shape)
+    #                    print(obj[1])
+    #                    print(obj[2])
+                        imgplot = plt.plot(x_range,obj[0],'-k')
+                        ax.set_title(obj[1])
+                        ax.set_xlabel(matx+' core radius / nm' if indd==0 else matx+' layer thickness / nm')
+                        figname=key+'_'+obj[2] if not savename else dirname+key+'_'+obj[2]+rawname
+                        plt.savefig(figname+'.svg')
+                        plt.cla()
+    #                    print(plt.get_fignums())
+                plt.close('all')
+    #            print(plt.get_fignums())
+            if sum(list(map(gt,[*matrix_size,photoph['dip_range'].size],repeat(1))))>1:
+                # slices list, populated by all zeros
+                slice_1=np.zeros(len(matrix_size)+1,dtype=int).tolist()
+                # checking which two layers have most sizes
+                (largest_ind,largest_values)=\
+                zip(*sorted(list(enumerate([*matrix_size,photoph['dip_range'].size])),key=itemgetter(1),reverse=True))
+                # updating slice matrix with two most populated slices
+                slice_1[largest_ind[0]]=slice(0,largest_values[0])
+                slice_1[largest_ind[1]]=slice(0,largest_values[1])
+#                # two largest ind
+#                largest_ind=largest_ind[0:2]
+#                largest_slice=[slice(0,largest_values[0]),slice(0,largest_values[1])]
+#                # other indices
+#                other_ind=largest_ind[2:]
+#                matrix_size_other=largest_values[2:]
+#                other_slice=list(map(round,(map(mul,repeat(0.5),matrix_size_other))))
+#                comb_slices=[*largest_slice,*other_slice]
+#                (_,sorted_slices)=zip(*sorted(list(zip([largest_ind,other_ind],comb_slices)),key=itemgetter(0)))
+#                largest_sorted=sorted(largest_ind)
+                matx='';maty='';x_from=0;y_from=0;x_to=0;y_to=0
+                for (d,mat,ffrom,tto) in zip(largest_ind[0:2],[matx,maty],[x_from,y_from],[x_to,y_to]):
+                    # index is dipole range
+                    if d>matrix_sze:
+                        mat='dipole distance' 
+                        ffrom=photoph['dip_range'][0]
+                        tto=photoph['dip_range'][-1]
+                    else:
+                        mat=picklecontent['param']['layers'][d]['material']
+                        ffrom=picklecontent['param']['layers'][d]['range']['from']
+                        tto=picklecontent['param']['layers'][d]['range']['to']
+                extent_list=[x_from,x_to,y_from,y_to]
+        
+                fig = plt.figure(figsize=(8+1.7,8*(y_to-y_from)/(x_to-x_from)))  
+                ax = fig.add_subplot(111)
+                for key in labels.keys():
+                    img_list=[]
+                    title=[]
+                    fig_sufix=[]    
+                    if key in ifspectra.keys():
+                        for wave in ifspectra[key]:
+                            if wave in Lambda:
+                                slice1=[*slice_1,int((wave-w_start)/w_every)]
+                                img_list.append(np.transpose(photoph[key][slice1]))
+                                title.append(labels[key]+' at '+str(wave)+' nm')
+                                fig_sufix.append(str(wave)+'_')
+                    else:
+                        img_list=[np.transpose(photoph[key][slice_1])]
+                        title=[labels[key]]
+                        fig_sufix=['']
+                        
+                    for obj in zip(img_list,title,fig_sufix):
+                        imgplot = plt.imshow(obj[0],cmap="jet", interpolation="bicubic",\
+                                             extent=extent_list)
+                        ax.set_title(obj[1])
+                        ax.invert_yaxis()
+                        ax.set_xlabel(matx+' core radius / nm' if largest_sorted[0]==0 else matx+' layer thickness / nm')
+                        ax.set_ylabel(maty+' layer thickness / nm')
+                        plt.colorbar()
+                        figname=key+'_'+obj[2] if not savename else dirname+key+'_'+obj[2]+rawname
+                        plt.savefig(figname+'.svg')
+                        plt.cla()
+    #                    print(plt.get_fignums())
+                plt.close('all')
+    #            print(plt.get_fignums())
     if savename:
         picklefile=dirname+rawname+'_photoph'+'.pickle'
         with open(picklefile,'wb') as f:

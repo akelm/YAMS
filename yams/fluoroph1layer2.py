@@ -64,80 +64,47 @@ class LoopObj:
                       Cepsilon,layers,self.T,self.mat_sizecor_dict)
         
         # extinction,absorption and scattering coefficients by two methods
-        (QextM, QscaM, QabsM)=extcoeff_M(xk[-1],ME[0],MM[0])
-        (QextT, QscaT, QabsT)=extcoeff_T(xk[-1],TE[-1],TM[-1])
+        (QextM, QscaM, QabsM)=extcoeff_M(xk[-1],ME[0],MM[0],self.settings)
+        (QextT, QscaT, QabsT)=extcoeff_T(xk[-1],TE[-1],TM[-1],self.settings)
+        fargs=(Ca, Cepsilon, dd ,kL, self.Lambda, RBx,RBz,xk,zk,
+                  ME,MM,TE,TM,self.pin,self.taun,self.bn1mat,self.settings)
+        ffact=self.factor(fargs)
         num_jobs= mp.cpu_count()
         multiproc=self.settings['multiprocessing']  and (dip_range.size>1)
         if multiproc:
-            fargs=(Ca, Cepsilon, dd ,kL, self.Lambda, RBx,RBz,xk,zk,
-                              ME,MM,TE,TM,self.pin,self.taun,self.bn1mat)
-            ffact=self.factor(fargs)
             with mp.Pool(processes=num_jobs) as pool2:
                 res2 = pool2.map_async(ffact.run, dip_range.tolist())
                 res2.wait()
             ress=res2.get()
-            resE=ress[slice(0,dip_range.size)][0:6]
-            resX=ress[slice(0,dip_range.size)][6:8]
-#            results=np.asarray(ress).swapaxes(0,1).tolist()
-#            (MRadPerp,  MRadPara,  MNRPerp,  MNRPara,  MTotPerp,  MTotPara, 
-#             Fexcperp,  Fexcpara)=results
         else:
-            (MRadPerp,  MRadPara,  MNRPerp,  MNRPara,  MTotPerp,  MTotPara)=([],[],[],[],[],[])
-            (Fexcperp,  Fexcpara)=([],[])
-            resE=[]
-            resX=[]
-            for k in range(dip_range.size):
-                print(k)
-                dip_pos=dip_range[k]
-                # dipole emission
-                resE.append(int_wszystko(Ca, Cepsilon, dd, dip_pos ,kL, self.Lambda, RBx,RBz,xk,zk,ME,MM,TE,TM))
-                # excitation enhancement with plane-wave excitation
-                resX.append(wzm_layer(ME[0],MM[0], ME[dd], MM[dd],self.Lambda,\
-                    dip_pos, Cepsilon[dd],self.pin, self.taun,self.bn1mat))
-        (MRadPerp,  MRadPara,  MNRPerp,  MNRPara,  MTotPerp,  MTotPara)=\
-                                    np.asarray(resE).swapaxes(0,1).tolist()
-        (Fexcperp,  Fexcpara)=np.asarray(resX).swapaxes(0,1).tolist()
-#                i=0
-#                for item in (MRadPerp,  MRadPara,  MNRPerp,  MNRPara,  MTotPerp,  MTotPara):
-#                    item.append(res[i])
-#                    i+=1
-#                
-#                # excitation enhancement with plane-wave excitation
-#                res1=wzm_layer(ME[0],MM[0], ME[dd], MM[dd],self.Lambda,\
-#                    dip_pos, Cepsilon[dd],self.pin, self.taun,self.bn1mat)
-#                i=0
-#                for item in (Fexcperp,  Fexcpara):
-#                    item.append(res1[i])
-#                    i+=1
-#    #        print('MRadPerp')
-#    #        print(np.asarray(MRadPerp).shape)
-#            [MRadPerp,  MRadPara,  MNRPerp,  MNRPara,  MTotPerp,  MTotPara, Fexcperp,  Fexcpara]=\
-#            self.matswapaxes(MRadPerp,  MRadPara,  MNRPerp,  MNRPara,  MTotPerp,  MTotPara, Fexcperp,  Fexcpara,ax1=0,ax2=0)
-
-                
-         # in fact i don't swap axes   
-#        matlab_keys=['Lambda','dip_pos','pin', 'taun','bn1mat']
+            ress=[]
+            for dip_pos in dip_range.tolist():
+                ress.append(ffact.run(dip_pos)) # D x 8 x L
+        ress_array=np.array(ress).swapaxes(1,2) # D x L x 8
+#        (MRadPerp,  MRadPara,  MNRPerp,  MNRPara,  MTotPerp,  MTotPara,Fexcperp,\
+#         Fexcpara)=[np.zeros([dip_range.size,self.Lambda.size])]*8
+        [MRadPerp,  MRadPara,  MNRPerp,  MNRPara,MTotPerp,  MTotPara,Fexcperp,\
+         Fexcpara]=[ress_array[:,:,ind1] for ind1 in range(8)]
+#
+#        print(MRadPerp.shape)
+#        print(Fexcperp.shape)
         out_dict=dict(zip(self.keys,map(locals().get,self.keys)))
-        return out_dict    
-#    def matswapaxes(self,*matrices,ax1=0,ax2=0):
-#        results=[]
-#        for matrix in matrices:
-#            results.append( np.asarray(matrix).swapaxes(ax1,ax2))
-#        return results
+        return out_dict
+    
     class factor:
         def __init__(self,params):
             (self.Ca, self.Cepsilon, self.dd ,self.kL, self.Lambda, self.RBx,
              self.RBz,self.xk,self.zk,self.ME,self.MM,self.TE,self.TM,self.pin, 
-             self.taun,self.bn1mat)=params
+             self.taun,self.bn1mat,self.settings)=params
         def run(self,dip_pos):
             (MRadPerp,  MRadPara,  MNRPerp,  MNRPara,  MTotPerp,  MTotPara)=\
             int_wszystko(self.Ca, self.Cepsilon, self.dd ,dip_pos,self.kL, self.Lambda, 
-                         self.RBx,self.RBz,self.xk,self.zk,self.ME,self.MM,self.TE,self.TM)
+                         self.RBx,self.RBz,self.xk,self.zk,self.ME,self.MM,self.TE,self.TM,self.settings)
             (Fexcperp,  Fexcpara)=\
             wzm_layer(self.ME[0],self.MM[0], self.ME[self.dd],self.MM[self.dd],self.Lambda,
-                      dip_pos, self.Cepsilon[self.dd],self.pin, self.taun,self.bn1mat)
-            print(MRadPerp.shape)
-            print(Fexcperp.shape)
+                      dip_pos, self.Cepsilon[self.dd],self.pin, self.taun,self.bn1mat,self.settings)
+#            print(MRadPerp.shape)
+#            print(Fexcperp.shape)
             return [MRadPerp,  MRadPara,  MNRPerp,  MNRPara,  MTotPerp,  MTotPara,Fexcperp,  Fexcpara]
         
 def fluoroph1layer2(parfile=[],data=[],savename=None,mat_dict=None,\
@@ -234,6 +201,6 @@ def fluoroph1layer2(parfile=[],data=[],savename=None,mat_dict=None,\
             # saving obj to .mat file
         sio.savemat(dirname+rawname+'.mat',save_dic) 
     if fotof_files!=None:
-        porph_int(results=results,data=data,savename=savename,rho_rel=rho_rel,dip_range=dip_range_init,fotof_files=fotof_files)
+        porph_int(results=results,data=data,savename=savename,rho_rel=rho_rel,dip_range=dip_range_init,fotof_files=fotof_files,settings=settings)
     
     

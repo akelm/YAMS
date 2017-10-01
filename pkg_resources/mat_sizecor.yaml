@@ -1,4 +1,3 @@
-# mat    omegap/eV    fermi veloc nm/fs     Debay temp/K    Fermi en/eV     Fermi surf scat prob    fractional umklapp    Beta/1/K
 gold:
     # plasma frequency in eV
     omegap: 9.02

@@ -66,6 +66,7 @@ class LoopObj:
         # extinction,absorption and scattering coefficients by two methods
         (QextM, QscaM, QabsM)=extcoeff_M(xk[-1],ME[0],MM[0],self.settings)
         (QextT, QscaT, QabsT)=extcoeff_T(xk[-1],TE[-1],TM[-1],self.settings)
+        # enh factors
         fargs=(Ca, Cepsilon, dd ,kL, self.Lambda, RBx,RBz,xk,zk,
                   ME,MM,TE,TM,self.pin,self.taun,self.bn1mat,self.settings)
         ffact=self.factor(fargs)
@@ -80,6 +81,7 @@ class LoopObj:
             ress=[]
             for dip_pos in dip_range.tolist():
                 ress.append(ffact.run(dip_pos)) # D x 8 x L
+        # translating list of results into array
         ress_array=np.array(ress).swapaxes(1,2) # D x L x 8
 #        (MRadPerp,  MRadPara,  MNRPerp,  MNRPara,  MTotPerp,  MTotPara,Fexcperp,\
 #         Fexcpara)=[np.zeros([dip_range.size,self.Lambda.size])]*8
@@ -128,13 +130,13 @@ def fluoroph1layer2(parfile=[],data=[],savename=None,mat_dict=None,\
     # loading materials file if necessary
     if not mat_sizecor_dict:    
         with open('../pkg_resources/mat_sizecor.yaml') as stream:
-            self.mat_sizecor_dict=yaml.load(stream)
+            mat_sizecor_dict=yaml.load(stream)
     if not mat_dict:        
         with open('../pkg_resources/materials.yaml') as stream:
-            self.mat_dict=yaml.load(stream)
+            mat_dict=yaml.load(stream)
     if not mat_tempcor_dict:
         with open('../pkg_resources/mat_tempcor.yaml') as stream:
-            self.mat_tempcor_dict=yaml.load(stream)
+            mat_tempcor_dict=yaml.load(stream)
     # settings file
     with open('../pkg_resources/settings.yaml') as stream:
         settings=yaml.load(stream)

@@ -62,6 +62,7 @@ def porph_int(results=[],data=[],picklefile=[],savename=None,rho_rel=1,dip_range
     photoph={}
     photoph['rho_rel']=picklecontent['rho_rel']
     photoph['dip_range']=picklecontent['dip_range']
+    photoph['param']=picklecontent['param']
     # putting Q into matrix
     qkeys=('QextM', 'QscaM', 'QabsM','QextT', 'QscaT', 'QabsT')
     for key in qkeys:
@@ -103,12 +104,16 @@ def porph_int(results=[],data=[],picklefile=[],savename=None,rho_rel=1,dip_range
             result_dict['Fexc_'+sufix]=\
                 (result['Fexcperp']*fotof['orient'][0] + result['Fexcpara']*fotof['orient'][1])/\
                   np.sum(fotof['orient'])  # D x L
-            result_dict['Ftau_'+sufix]=1/fotof['QY']/(1./fotof['QY']-1 +\
-                  (result['FkTotPerp']*fotof['orient'][0] + \
-                   result['FkTotPara']*fotof['orient'][1])/np.sum(fotof['orient']))  # D x 1
+            result_dict['FkTot_'+sufix]=(result['FkTotPerp']*fotof['orient'][0] + \
+                   result['FkTotPara']*fotof['orient'][1])/np.sum(fotof['orient'])
+            result_dict['FkRad_'+sufix]=(result['FkRadPerp']*fotof['orient'][0] + \
+                   result['FkRadPara']*fotof['orient'][1])/np.sum(fotof['orient'])
+            result_dict['Ftau_'+sufix]=1/(1 + (result_dict['FkTot_'+sufix]-1)*fotof['QY']) # D x 1
+#            1/fotof['QY']/(1./fotof['QY']-1 +\
+#                  (result['FkTotPerp']*fotof['orient'][0] + \
+#                   result['FkTotPara']*fotof['orient'][1])/np.sum(fotof['orient']))  # D x 1
             result_dict['FQY_'+sufix]=\
-                  (result['FkRadPerp']*fotof['orient'][0] + result['FkRadPara']*fotof['orient'][1])/\
-                  np.sum(fotof['orient'])*result_dict['Ftau_'+sufix] # D x 1
+                  result_dict['FkRad_'+sufix]*result_dict['Ftau_'+sufix] # D x 1
 #            result_dict['Qext_'+sufix]=result['FkRadPerp']
             results_photoph.append(result_dict)
 #        photoph['results']=results_photoph
@@ -119,6 +124,10 @@ def porph_int(results=[],data=[],picklefile=[],savename=None,rho_rel=1,dip_range
             np.array(tuple(map(getitem,results_photoph,repeat('Ftau_'+sufix)))).reshape([*matrix_size,photoph['dip_range'].size])
         photoph['FQY_'+sufix]=\
             np.array(tuple(map(getitem,results_photoph,repeat('FQY_'+sufix)))).reshape([*matrix_size,photoph['dip_range'].size])
+        photoph['FkRad_'+sufix]=\
+            np.array(tuple(map(getitem,results_photoph,repeat('FkRad_'+sufix)))).reshape([*matrix_size,photoph['dip_range'].size])
+        photoph['FkTot_'+sufix]=\
+            np.array(tuple(map(getitem,results_photoph,repeat('FkTot_'+sufix)))).reshape([*matrix_size,photoph['dip_range'].size])
         # spectra
         photoph['Frad_'+sufix]=\
             np.array(tuple(map(getitem,results_photoph,repeat('MRad_'+sufix)))).\

@@ -19,7 +19,7 @@
 '''
 
 
-from tkinter import *
+import tkinter as tk
 from tkinter import ttk
 import tkinter.filedialog as filedialog
 from tkinter import messagebox
@@ -46,6 +46,7 @@ import sys
 #import subprocess
 from multiprocessing import Process
 import logging
+import pickle
 #paths=[os.getcwd(),\
 #os.path.abspath(os.path.join(os.getcwd(), os.pardir))+"/pkg_resources",\
 #os.path.abspath(os.path.join(os.getcwd(), os.pardir))+"/pkg_resources/ref_ind",\
@@ -62,13 +63,13 @@ class LoggingHandlerFrame(ttk.Frame):
             logging.Handler.__init__(self)
             self.setFormatter(logging.Formatter(fmt="%(asctime)s - %(levelname)s: %(message)s", datefmt='%d.%m.%Y %H:%M:%S'))
             self.widget = widget
-            self.widget.config(state=DISABLED)
+            self.widget.config(state=tk.DISABLED)
 
         def emit(self, record):
-            self.widget.config(state=NORMAL)
-            self.widget.insert(END, self.format(record) + "\n")
-            self.widget.see(END)
-            self.widget.config(state=DISABLED)
+            self.widget.config(state=tk.NORMAL)
+            self.widget.insert(tk.END, self.format(record) + "\n")
+            self.widget.see(tk.END)
+            self.widget.config(state=tk.DISABLED)
 
     def __init__(self, *args, **kwargs):
         ttk.Frame.__init__(self, *args, **kwargs)
@@ -78,11 +79,11 @@ class LoggingHandlerFrame(ttk.Frame):
 #        self.columnconfigure(2, weight=0)
         self.rowconfigure(0, weight=1)
 
-        self.scrollbar = Scrollbar(self)
-        self.scrollbar.grid(row=0, column=1, sticky=(N,S))
+        self.scrollbar = tk.Scrollbar(self)
+        self.scrollbar.grid(row=0, column=1, sticky=(tk.N,tk.S))
 
-        self.text = Text(self, yscrollcommand=self.scrollbar.set,width=98,height=18)
-        self.text.grid(row=0, column=0,columnspan=1, sticky=(E,W))
+        self.text = tk.Text(self, yscrollcommand=self.scrollbar.set,width=98,height=18)
+        self.text.grid(row=0, column=0,columnspan=1, sticky=(tk.E,tk.W))
 
         self.scrollbar.config(command=self.text.yview)
 
@@ -202,7 +203,7 @@ class App:
             master.clipboard_clear()
             master.clipboard_append(text)
             master.update() # now it stays on the clipboard after the window is closed
-        except TclError:
+        except tk.TclError:
             pass
     def cut(self):
         master=self.master
@@ -212,29 +213,29 @@ class App:
             master.clipboard_clear()
             master.clipboard_append(text)
             master.update() # now it stays on the clipboard after the window is closed
-            obj.delete(SEL_FIRST, SEL_LAST)
-        except TclError:
+            obj.delete(tk.SEL_FIRST, tk.SEL_LAST)
+        except tk.TclError:
             pass
     def paste(self):
         master=self.master
         obj=master.focus_get()
         try:
             text=master.selection_get(selection='CLIPBOARD')
-            obj.insert(INSERT,text)
-        except TclError:
+            obj.insert(tk.INSERT,text)
+        except tk.TclError:
             pass
     def selectall(self):
         master=self.master
         obj=master.focus_get()
         try:
-            obj.selection_range(0, END)
+            obj.selection_range(0, tk.END)
         except AttributeError:
             pass
         
     def create_menu(self,master):
-        self.menubar=Menu(master)
+        self.menubar=tk.Menu(master)
         # File
-        self.filemenu = Menu(self.menubar, tearoff=0)
+        self.filemenu = tk.Menu(self.menubar, tearoff=0)
         self.filemenu.add_command(label="Load input file", command=self.LoadFile)
         self.filemenu.add_command(label="Save input file", command=self.SaveFileNow)
         self.filemenu.add_command(label="Load raw results", command=lambda: 
@@ -250,14 +251,14 @@ class App:
         self.filemenu.add_command(label="Exit", command=master.destroy)
         self.menubar.add_cascade(label="File", menu=self.filemenu)
         # Edit
-        self.editmenu = Menu(self.menubar, tearoff=0)
+        self.editmenu = tk.Menu(self.menubar, tearoff=0)
         self.editmenu.add_command(label="Cut", command=self.cut)
         self.editmenu.add_command(label="Copy", command=self.copy)
         self.editmenu.add_command(label="Paste", command=self.paste)
         self.editmenu.add_command(label="Select all", command=self.selectall)
         self.menubar.add_cascade(label="Edit", menu=self.editmenu)
         # Run
-        self.runmenu = Menu(self.menubar, tearoff=0)
+        self.runmenu = tk.Menu(self.menubar, tearoff=0)
         self.runmenu.add_command(label="Preview", command=self.create_window)
         self.runmenu.add_command(label="Check integrity", command=self.results_size)
         self.runmenu.add_command(label="Run Mie calc", command=self.Run)
@@ -266,7 +267,7 @@ class App:
         self.runmenu.add_command(label="Stop", command=self.stop,state="disabled")
         self.menubar.add_cascade(label="Run", menu=self.runmenu)
         # Help
-        self.helpmenu = Menu(self.menubar, tearoff=0)
+        self.helpmenu = tk.Menu(self.menubar, tearoff=0)
         self.helpmenu.add_command(label="README", command=self.show_readme)
         self.helpmenu.add_command(label="About", command=self.about)
         self.helpmenu.add_command(label="License", command=self.show_license)
@@ -298,11 +299,11 @@ class App:
         ttk.Label(frame,text='every /nm',padding=(5,5,10,10))\
         .grid(column=3,row=1)
          # CHECKBUTTONS
-        self.ifsizecor=StringVar()
+        self.ifsizecor=tk.StringVar()
         self.check_sizecor = ttk.Checkbutton(frame, text='size correction',\
             variable=self.ifsizecor,offvalue='',onvalue=' size correction,')
         self.check_sizecor.grid(column=0,row=3)
-        self.ifnonlocal=StringVar()
+        self.ifnonlocal=tk.StringVar()
         self.check_nonlocal = ttk.Checkbutton(frame, text='nonlocal correction',\
             variable=self.ifnonlocal,offvalue='',onvalue=' nonlocal correction,')
         self.check_nonlocal.grid(column=1,row=3)       
@@ -327,7 +328,7 @@ class App:
         self.everyy= MyCombobox(frame, values=self.every_list,default_val=1)
         self.everyy.grid(column=3,row=2)
         
-        ttk.Separator(frame, orient=HORIZONTAL).grid(row=4, \
+        ttk.Separator(frame, orient=tk.HORIZONTAL).grid(row=4, \
                      columnspan=4,sticky="ew",pady=5)
         # LEFT DOWN
         self.l = Drag_and_Drop_Listbox(frame, height=1 ,dipole=self.dipole)
@@ -338,18 +339,18 @@ class App:
         self.button_add.grid(column=2,row=3,columnspan=2)
         # AddButtonCommand(l,materials.get(),ifsizecor.get(),ifnonlocal.get(),fromm.get(),too.get(),everyy.get())
         ttk.Label(frame,text='core side',padding=(5,5,10,10))\
-                .grid(column=3,row=5,sticky=(NW))
+                .grid(column=3,row=5,sticky=(tk.NW))
         self.button_up = ttk.Button(frame, text='up',padding=(5,5,10,10), \
                                command=lambda: self.ShiftSel('Up'))
-        self.button_up.grid(column=3,row=6,sticky=(W))
+        self.button_up.grid(column=3,row=6,sticky=(tk.W))
         self.button_down = ttk.Button(frame, text='down',padding=(5,5,10,10), \
                                  command=lambda: self.ShiftSel('Down'))
-        self.button_down.grid(column=3,row=7,sticky=(W))
+        self.button_down.grid(column=3,row=7,sticky=(tk.W))
         self.button_delete = ttk.Button(frame, text='remove',padding=(5,5,10,10), \
                                    command=lambda: self.RemoveButtonCommand())
-        self.button_delete.grid(column=3,row=8,sticky=(W))
+        self.button_delete.grid(column=3,row=8,sticky=(tk.W))
         ttk.Label(frame,text='medium side',padding=(5,5,10,10))\
-            .grid(column=3,row=9,sticky=(SW))
+            .grid(column=3,row=9,sticky=(tk.SW))
         
         ttk.Scrollbar(self.l, orient='vertical')
         
@@ -442,7 +443,7 @@ class App:
         for file in self.foto_files:
             with open(file) as stream:
                 foto_dict=yaml.load(stream)
-            self.mlb.insert(END, 
+            self.mlb.insert(tk.END, 
               (os.path.basename(file), foto_dict['QY'], foto_dict['orient'][0],foto_dict['emission']))
         
         ttk.Label(frame,text='Add a chromophore:',\
@@ -566,14 +567,14 @@ class App:
         self.butt_check.grid(column=3,row=9,columnspan=1,sticky="e")
         
         
-        self.res_size=StringVar()
+        self.res_size=tk.StringVar()
         self.res_size.set('Approximate size of results is 0 MB')
         ttk.Label(frame,textvariable=self.res_size,relief='flat',background='white',\
                   padding=(10,5,10,5)).grid(column=0,row=9,columnspan=2,sticky="e")
 
 #        ttk.Label(frame, textvariable=self.res_size,padding=(5,5,10,10)).grid(column=2,row=9,columnspan=2,sticky="w")
         
-        ttk.Separator(frame, orient=HORIZONTAL).grid(row=10, \
+        ttk.Separator(frame, orient=tk.HORIZONTAL).grid(row=10, \
              columnspan=5,sticky="ew",pady=5)
         # SAVE PARAMS AND RES
 
@@ -581,7 +582,7 @@ class App:
         direct='../results/res_'+now        
         
         
-        self.ifsavepar=BooleanVar()
+        self.ifsavepar=tk.BooleanVar()
         self.ifsavepar.set(False)
         
         self.butt_savepar=ttk.Button(frame, text='...',padding=(-10,5,-10,5),
@@ -611,7 +612,7 @@ class App:
 #            command=lambda: EnableButton(self.ifsaveres.get(),self.butt_saveres,self.entry_saveres))
 #        self.check_saveres.grid(column=0,row=11,columnspan=1,sticky="w")
 
-        Label(frame, text='Save results as: ').grid(column=0,row=12,columnspan=1,sticky="w")
+        ttk.Label(frame, text='Save results as: ').grid(column=0,row=12,columnspan=1,sticky="w")
         self.entry_saveres=ttk.Entry(frame)
         self.entry_saveres.grid(column=1,columnspan=4,row=12,sticky="we",padx=4)
         self.entry_saveres.insert(0,self.saveres_default+'.pickle')
@@ -628,7 +629,7 @@ class App:
 #            variable=self.ifsavefoto,savename='res',
 #            command=lambda: EnableButton(self.ifsavefoto.get(),self.butt_savefoto,self.entry_savefoto))
 #        self.check_savefoto.grid(column=0,row=12,columnspan=1,sticky="w")
-        Label(frame, text='Save photophysics as: ').grid(column=0,row=13,columnspan=1,sticky="w")
+        ttk.Label(frame, text='Save photophysics as: ').grid(column=0,row=13,columnspan=1,sticky="w")
         
         self.entry_savefoto=ttk.Entry(frame)
         self.entry_savefoto.grid(column=1,columnspan=4,row=13,sticky="we",padx=4)
@@ -730,7 +731,7 @@ class App:
     def create_window(self):
 
         fig=self.give_plot()
-        self.newwindow = Toplevel(root)
+        self.newwindow = tk.Toplevel(root)
         self.newwindow.wm_title("Image of the system")
  
         canvas = FigureCanvasTkAgg(fig, master=self.newwindow)
@@ -763,7 +764,7 @@ class App:
             pattern=re.compile(str1,re.VERBOSE)
             dipolenum=re.search('^\d+',self.dipole.get()).group(0)
             keyes=('from','to','every')
-            for item in self.l.get(0,END):
+            for item in self.l.get(0,tk.END):
                 ldict={}
                 lsplit=list(pattern.search(item).groups())
                 if lsplit[0]==dipolenum:
@@ -818,11 +819,11 @@ class App:
             self.runmenu.entryconfigure("Run Mie calc",state="disabled")
             self.runmenu.entryconfigure("Run photophysics",state="disabled")
             self.runmenu.entryconfigure("Stop",state="normal")
-            self.toplev=Toplevel(root)
+            self.toplev=tk.Toplevel(root)
             self.toplev.wm_title('YAMS, processing...')
             self.toplev.protocol("WM_DELETE_WINDOW", self.stop)
             self.progress_bar = ttk.Progressbar(self.toplev,
-                                                orient=HORIZONTAL,
+                                                orient=tk.HORIZONTAL,
                                                 mode='indeterminate',
                                                 takefocus=True,
                                                 length=200)
@@ -830,7 +831,7 @@ class App:
             self.butt_stop = ttk.Button(self.toplev, text="STOP",padding=(5,5,5,5),\
                                         command=self.stop)
             self.butt_stop.grid(column=1,row=0,columnspan=1,sticky="w")
-            self.labelrun=StringVar()
+            self.labelrun=tk.StringVar()
             self.labelrun.set('Running calculations...')
             self.runlabel=ttk.Label(self.toplev,textvariable=self.labelrun,\
                   padding=(5,5,10,10)).grid(column=0,row=1,columnspan=2,sticky="w")
@@ -890,11 +891,11 @@ class App:
             self.runmenu.entryconfigure("Run Mie calc",state="disabled")
             self.runmenu.entryconfigure("Run photophysics",state="disabled")
             self.runmenu.entryconfigure("Stop",state="normal")
-            self.toplev=Toplevel(root)
+            self.toplev=tk.Toplevel(root)
             self.toplev.wm_title('YAMS, processing...')
             self.toplev.protocol("WM_DELETE_WINDOW", self.stop)
             self.progress_bar = ttk.Progressbar(self.toplev,
-                                                orient=HORIZONTAL,
+                                                orient=tk.HORIZONTAL,
                                                 mode='indeterminate',
                                                 takefocus=True,
                                                 length=200)
@@ -902,7 +903,7 @@ class App:
             self.butt_stop = ttk.Button(self.toplev, text="STOP",padding=(5,5,5,5),\
                                         command=self.stop)
             self.butt_stop.grid(column=1,row=0,columnspan=1,sticky="w")
-            self.labelrun=StringVar()
+            self.labelrun=tk.StringVar()
             self.labelrun.set('Running calculations...')
             self.runlabel=ttk.Label(self.toplev,textvariable=self.labelrun,\
                   padding=(5,5,10,10)).grid(column=0,row=1,columnspan=2,sticky="w")
@@ -987,7 +988,7 @@ class App:
             self.toplev.destroy()
             self.runmenu.entryconfigure("Run all",state="normal")
             self.runmenu.entryconfigure("Run Mie calc",state="normal")
-            self.runmenu.entryconfigure("Run photophysics",state="normal")
+            #self.runmenu.entryconfigure("Run photophysics",state="normal")
             self.runmenu.entryconfigure("Stop",state="disabled") 
             self.logger.info('Stopped')
         self.logger.info('Stopping')
@@ -1001,11 +1002,11 @@ class App:
     def refresh_names(self):
             now='_'.join(map(str,datetime.datetime.now().timetuple()[0:6]))
             direct='../results/res_'+now
-            self.entry_savepar.delete(0,END)
+            self.entry_savepar.delete(0,tk.END)
             self.entry_savepar.insert(0,direct+'/par_'+now+'.yaml')
-            self.entry_saveres.delete(0,END)
+            self.entry_saveres.delete(0,tk.END)
             self.entry_saveres.insert(0,direct+'/res_'+now+'.pickle')
-            self.entry_savefoto.delete(0,END)
+            self.entry_savefoto.delete(0,tk.END)
             self.entry_savefoto.insert(0,direct+'/res_'+now+'_photoph.pickle')
             self.logger.info('Names refreshed')
    
@@ -1014,14 +1015,14 @@ class App:
     def OpenFile(self,entry):
         f = filedialog.askopenfilename(initialdir='../pkg_resources/photophysics')
         if f:
-            entry.delete(0, END)
+            entry.delete(0, tk.END)
             entry.insert(0,f)
             self.logger.info('Emission file selected')
  
     def SaveFile(self,entry):
         f = filedialog.asksaveasfilename(defaultextension=".yaml",initialdir='../results/')
         if f:
-            entry.delete(0, END)
+            entry.delete(0, tk.END)
             entry.insert(0,f)
             self.logger.info('Savename selected')
     def SaveFileNow(self):
@@ -1131,7 +1132,7 @@ class App:
               self.waveevery.set(str(data['wavelength']['every']))
               # layers
               # removes items in self.l
-              self.l.delete(0, END)
+              self.l.delete(0, tk.END)
               self.dipole.set('')
               k=0
               dipnum=None
@@ -1157,7 +1158,7 @@ class App:
                       strr+=' from '+str(layer['range']['from'])+' nm'
                       strr+=' to '+str(layer['range']['to'])+' nm'
                       strr+=' every '+str(layer['range']['every'])+' nm'
-                  self.l.insert(END,strr)
+                  self.l.insert(tk.END,strr)
                   k+=1   
               self.l.UpdateNumbering()
               if dipnum!=None:
@@ -1172,7 +1173,7 @@ class App:
         String=str(self.l.size()+1)+'. '+String1+' from '+self.fromm.get()+\
         ' nm to '+self.too.get()+\
         ' nm every '+self.everyy.get()+' nm'
-        self.l.insert(END, String)
+        self.l.insert(tk.END, String)
         self.l.UpdateNumbering()
         self.logger.info('Added layer')
         
@@ -1203,7 +1204,7 @@ class App:
             if not param_name:
                 max_num=0
                 pattern=re.compile('^chromophore(\d+).yaml$')
-                for s in self.mlb.get(0,last=END,collist=0)[0]:
+                for s in self.mlb.get(0,last=tk.END,collist=0)[0]:
                     found=re.findall(pattern,s)
                     if found:
                         max_num=max_num if max_num>int(found[0]) else int(found[0])
@@ -1214,8 +1215,8 @@ class App:
                 if not os.path.splitext(param_name)[1]=='.yaml': param_name+='.yaml'
 #                print(param_name)
 #                print(self.mlb.get(0,last=END,collist=0)[0])
-                if param_name in self.mlb.get(0,last=END,collist=0)[0]: raise FileExistsError
-            self.mlb.insert(END, 
+                if param_name in self.mlb.get(0,last=tk.END,collist=0)[0]: raise FileExistsError
+            self.mlb.insert(tk.END, 
               (os.path.basename(param_name), qy, tdm,emname))
             # tutaj dodaje plik
             foto_dict={'QY':qy,'orient':[tdm,1-tdm],'emission':emname}
@@ -1240,37 +1241,37 @@ class App:
         messagebox.showinfo("About",data)
         
     def show_license(self):
-        self.toplev1=Toplevel(root)
+        self.toplev1=tk.Toplevel(root)
         self.toplev1.wm_title('License')
         with open('../LICENSE', 'r') as myfile:
             data=myfile.read()        
         self.tekst=scrolledtext.ScrolledText(self.toplev1)
         self.tekst.grid(row=0,column=0)
-        self.tekst.insert(INSERT,data)
+        self.tekst.insert(tk.INSERT,data)
         self.tekst.configure(state='disabled')
         
     def show_readme(self):
-        self.toplev1=Toplevel(root)
+        self.toplev1=tk.Toplevel(root)
         self.toplev1.wm_title('README')
         with open('../README.md', 'r') as myfile:
             data=myfile.read()        
         self.tekst=scrolledtext.ScrolledText(self.toplev1)
         self.tekst.grid(row=0,column=0)
-        self.tekst.insert(INSERT,data)
+        self.tekst.insert(tk.INSERT,data)
         self.tekst.configure(state='disabled')
         
     def references(self):
-        self.toplev1=Toplevel(root)
+        self.toplev1=tk.Toplevel(root)
         self.toplev1.wm_title('References')
         with open('../pkg_resources/references/references', 'r') as myfile:
             data=myfile.read()        
         self.tekst=scrolledtext.ScrolledText(self.toplev1)
         self.tekst.grid(row=0,column=0)
-        self.tekst.insert(INSERT,data)
+        self.tekst.insert(tk.INSERT,data)
         self.tekst.configure(state='disabled')
 #%%
 if __name__ == "__main__":
-    root = Tk()
+    root = tk.Tk()
     App(root)
     root.wm_title('YAMS, yet another Mie simulator')
     root.mainloop()

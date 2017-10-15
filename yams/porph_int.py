@@ -22,6 +22,7 @@ def int_spectrum(indices,spectrum,factor):
     return res
 
 def porph_int(results=[],data=[],picklefile=[],savename=None,rho_rel=1,dip_range=[],fotof_files=None,settings=None):
+
     # loading pickle file
     if picklefile:
         with open(picklefile,'rb') as f:
@@ -41,7 +42,6 @@ def porph_int(results=[],data=[],picklefile=[],savename=None,rho_rel=1,dip_range
         rawname=os.path.splitext(filename)[0]        
     else:
         dirname='../results/'
-    
     # settings file
     if not settings:
         with open('../pkg_resources/settings.yaml') as stream:
@@ -74,7 +74,6 @@ def porph_int(results=[],data=[],picklefile=[],savename=None,rho_rel=1,dip_range
 
 #    fotof_files=['tpp.yaml','pdtppF.yaml','pdtppP.yaml']
     # loading photophysics
-
     for fotof_file in fotof_files:
 #        print(fotof_file)
         with open('../pkg_resources/photophysics/'+fotof_file) as stream:
@@ -138,13 +137,12 @@ def porph_int(results=[],data=[],picklefile=[],savename=None,rho_rel=1,dip_range
             reshape([*matrix_size,photoph['dip_range'].size,Lambda.size])*photoph['rho_rel']
         photoph['FGamma_'+sufix]=\
             photoph['Fexc_'+sufix]*(photoph['FQY_'+sufix].reshape([*matrix_size,photoph['dip_range'].size,1]))
-    
+        
 #        # dictionary for saving
 #        dict_keys=('Ftau','FQY','Frad','Fexc','FGamma')
 #        dict_keys1=('Ftau_'+sufix,'FQY_'+sufix,'Frad_'+sufix,'Fexc_'+sufix,'FGamma_'+sufix)
 #        mat_dict=dict(zip(dict_keys,map(locals().get,dict_keys)))
 #        mat_dict1=dict(zip(dict_keys1,map(locals().get,dict_keys)))
-        
         if settings['images']:
             # so much plots, so much fun
             
@@ -170,7 +168,6 @@ def porph_int(results=[],data=[],picklefile=[],savename=None,rho_rel=1,dip_range
                 else:
                     matx=picklecontent['param']['layers'][indd]['material']
                     x_range=zakres(picklecontent['param']['layers'][indd]['range'])
-          
                 fig = plt.figure(figsize=(8,8*9/16))
                 ax = fig.add_subplot(111)
                 for key in labels.keys():

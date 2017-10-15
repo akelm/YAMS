@@ -1,0 +1,28 @@
+layers:
+- attributes:
+  - size correction
+  - nonlocal correction
+  material: gold
+  range:
+    every: 1.0
+    from: 7.5
+    to: 7.5
+- material: nhex
+  range:
+    every: 1.0
+    from: 10.0
+    to: 10.0
+- attributes:
+  - dipole:
+      range:
+        every: 1.0
+        from: 0.5
+        to: 2.5
+  material: etoh
+max order of expansion: 20
+temperature: 298.0
+theta: 360
+wavelength:
+  every: 1.0
+  from: 440.0
+  to: 640.0

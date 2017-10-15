@@ -25,7 +25,7 @@ def sum_conv(macierz,kierunek,settings):
         #==============================================================================
         # matrix with consecutive sums of elements
         macierz_c=np.cumsum(macierz,kierunek)
-    #    there are no zeros in macierz_c
+	#    there are no zeros in macierz_c
         # normalized gradient
         diff_mat=np.abs(np.gradient(macierz_c,axis=kierunek)/macierz_c)
         slices=list(map(slice,size_m))
@@ -33,9 +33,9 @@ def sum_conv(macierz,kierunek,settings):
         slices[kierunek]=slice(seq_len,-1,-1)
         # indices where to end summation
         index_mat1=np.expand_dims( # expanding dims to match dimensions of macierz
-            seq_len-1-np.nanargmax( # translating indice to non-reverse direciton
-                                  # nargmax find first largest element, here: 1
-            (diff_mat<=threshold)      # norm gradient must be below 0.01 at the end of series
+            seq_len-1-np.nanargmax( # translating indices to non-reverse direciton
+                                    # nargmax find first largest element
+            (diff_mat<=threshold)   # norm gradient must be below threshold at the end of series
                   ,axis=kierunek),
                         kierunek).repeat(seq_len,kierunek) # matching size of macierz
         # moving indices that are below earliest to earliest                           

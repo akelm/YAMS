@@ -5,16 +5,16 @@ Created on Sun Aug 13 18:15:36 2017
 
 taken from internets
 """
-from tkinter import *
-from tkinter import ttk
+import tkinter as tk
+#from tkinter import ttk
 import numpy as np
 
-class Drag_and_Drop_Listbox(Listbox):
+class Drag_and_Drop_Listbox(tk.Listbox):
     """ A tk listbox with drag'n'drop reordering of entries. """
     def __init__(self, master, dipole=None,**kw):
-        kw['selectmode'] = MULTIPLE
+        kw['selectmode'] = tk.MULTIPLE
         kw['activestyle'] = 'none'
-        Listbox.__init__(self, master, kw)
+        tk.Listbox.__init__(self, master, kw)
         self.bind('<Button-1>', self.getState, add='+')
         self.bind('<Button-1>', self.setCurrent, add='+')
         self.bind('<B1-Motion>', self.shiftSelection)
@@ -115,23 +115,23 @@ class Drag_and_Drop_Listbox(Listbox):
                 self.insert(i,x)
                 if ifsel:
                     self.selection_set(i)
-            self.dipole['values'] = [x.split(",")[0] for x in self.get(0,END)]
+            self.dipole['values'] = [x.split(",")[0] for x in self.get(0,tk.END)]
             self.dipole.set(self.dipole['values'][-1])
-            ifsel=self.selection_includes(END)
-            x=self.get(END)
-            self.delete(END)
+            ifsel=self.selection_includes(tk.END)
+            x=self.get(tk.END)
+            self.delete(tk.END)
             self.medium_par=''.join(x.split(',')[1:])
-            self.insert(END,x.split(', ')[0])
+            self.insert(tk.END,x.split(', ')[0])
             if ifsel:
-                self.selection_set(END)
+                self.selection_set(tk.END)
         
     def AddParams(self):
         if self.size()>0:
-            ifsel=self.selection_includes(END)
-            x=self.get(END)
-            self.delete(END)
+            ifsel=self.selection_includes(tk.END)
+            x=self.get(tk.END)
+            self.delete(tk.END)
             if self.medium_par:
                 x=x+','+self.medium_par
-            self.insert(END,x)
+            self.insert(tk.END,x)
             if ifsel:
-                self.selection_set(END)
+                self.selection_set(tk.END)

@@ -1,0 +1,7 @@
+share/icons
+x_libgtk-3.so.0
+x_liblapack.so.3
+x_libatlas.so.3
+x_libcrypto.so.1.1
+x_libQt5Network.so.5
+x_libgfortran.so.3

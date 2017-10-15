@@ -1,0 +1,46 @@
+# material    RI    name    reference    in    RI.bib
+acn:    
+    file: moutzouris_n2
+    ref:    moutzouris2014
+thf:    
+    file: bang_n2
+    ref:    bang2005
+chloroform:    
+    file: kedenburg_n2
+    ref:    kedenburg2012
+water:    
+    file: daimon_n2
+    ref:    daimon2007
+etoh:    
+    file: kedenburgetoh_n2
+    ref:    kedenburg2012
+air:    
+    file: ciddor_n2
+    ref:    ciddor1996
+gold:    
+    file: johnson_nc
+    ref:    johnson1972
+silica:    
+    file: gao_n2
+    ref:    gao2013
+nhex:    
+    file: nhex
+    ref:    kozma2005
+nstyrene:    
+    file: n_styrene
+    ref:    sultanova2009
+tpp:    
+    file: tpp_n2
+    ref:     
+dmf:    
+    file: dmf_n2
+    ref:    bang2005
+epa:    
+    file: epa
+    ref:     
+ether:    
+    file: ether
+    ref:    bang2005
+isopentane:    
+    file: isopentane
+    ref:    kerl1995

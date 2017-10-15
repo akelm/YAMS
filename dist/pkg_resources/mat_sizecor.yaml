@@ -1,0 +1,31 @@
+gold:
+    # plasma frequency in eV
+    omegap: 9.02
+    # fermi velocity in nm/fs
+    vF: 1.39
+    # debay temperature in K
+    TD: 170
+    # Fermi energy in eV
+    EF: 5.53
+    # suface scattering probability
+    L: 0.55    
+    # fractional umklapp coefficient
+    D: 0.77    
+    # linear temperature expansion coefficient in 1/K  
+    Beta: 4.17e-5
+# change coeffs for silver!
+silver:
+    # plasma frequency in eV
+    omegap: 9.02
+    # fermi velocity in nm/fs
+    vF: 1.39
+    # debay temperature in K
+    TD: 170
+    # Fermi energy in eV
+    EF: 5.53
+    # suface scattering probability
+    L: 0.55    
+    # fractional umklapp coefficient
+    D: 0.77    
+    # linear temperature expansion coefficient in 1/K  
+    Beta: 4.17e-5

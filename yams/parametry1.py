@@ -224,20 +224,21 @@ def give_eps(filename,Lambda,mat_dict=None,T=None):
     ceps1=np.array([*map(ceps.get,Lambda[:,0].tolist())])
     
     if mat_dict:
-        temp_range=zakres(mat_dict['temp_range'])
+        # loading densities for T
+        rho_array=np.genfromtxt('../pkg_resources/rho/'+mat_dict['file']+'.txt', \
+            dtype=float,delimiter='\t')
+        temp_range=rho_array[:,0]
         if not min(temp_range)<=T<=max(temp_range):
             print('temp of solvent outise range')
         # searching for closest temp (index) in the temp_range
         temp_val=list(abs(temp_range-T))
         closest_index_T=temp_val.index(min(temp_val))
-        # loading densities for T
-        rho_array=np.genfromtxt('../pkg_resources/rho/'+mat_dict['file']+'.txt', \
-            dtype=float,delimiter='\t')
-        rho=rho_array[closest_index_T]
+        # closest rho
+        rho=rho_array[closest_index_T,1]
         # loooking for 298 K index
         temp_val298=list(abs(temp_range-298))
         closest_index_298=temp_val298.index(min(temp_val298))
-        rho298=rho_array[closest_index_298]
+        rho298=rho_array[closest_index_298,1]
         rho_rel=rho/rho298
         # calculating b from Eyckmann's formula
         # after Mantulin1972

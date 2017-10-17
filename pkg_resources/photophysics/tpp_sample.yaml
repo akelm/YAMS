@@ -1,0 +1,11 @@
+# quantum yield
+QY: 0.042
+# file with emission spectrum (wavelength in nm, intensity)
+# file should be placed in the same directory
+emission: tppohem.txt
+# orientation of transition dipole moment with respect to nanoparticles radial direction
+# value must be below 1
+# tranversal orientation is calculated as 1-radial
+# for isotropic orientation, the value should be 0.33333333
+orient:
+- 0.5

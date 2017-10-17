@@ -3,10 +3,16 @@ PDF version of this README is in [docs/README.pdf](docs/README.pdf)
 # YAMS -- yet another Mie simulator
 A Python program with GUI to calculate electromagnetic field enhancement factors for plain-wave and dipole radiation in spherical shell geometry. Additionally, it can calculate the subsequent changes of photophysics for given fluorophores.
 # How it works
- Software calculates transfer matrices for electromagnetic field in multipolar expansion for nanoparticles composed of concentric spheres. The method for transfer matrix computation was taken from: [https://doi.org/10.1016/j.aop.2004.07.002](https://doi.org/10.1016/j.aop.2004.07.002). On the basis of that, field enhancement factor for excitation field (with respect to spatially averaged plain-wave) is calculated, the method was adapted from [Le Ru and Etchegoin SPLAC Package](https://www.victoria.ac.nz/scps/research/research-groups/raman-lab/numerical-tools/sers-and-plasmonics-codes). Enhancement of radiative emission rate was calculated as in [https://doi.org/10.1016/j.aop.2004.07.002](https://doi.org/10.1016/j.aop.2004.07.002). Enhancement of total emission rate was obtained by integration of Poynting vector below and under the dipole position.
- The longitudinal modes in nonlocal metal dielectric response were treated as in [https://doi.org/10.1016/j.aop.2004.07.002](https://doi.org/10.1016/j.aop.2004.07.002) with metal hydrodynamic constant and longitudinal wave vector taken as in [https://doi.org/10.1088/0953-8984/27/18/183204](https://doi.org/10.1088/0953-8984/27/18/183204) (omitting the size-correction part). The changes in electron mean-free path due to the surface scattering is obtained from: [https://doi.org/10.1021/jp8010074](https://doi.org/10.1021/jp8010074).
+ Software calculates transfer matrices for electromagnetic field in multipolar expansion for nanoparticles composed of concentric spheres. The method for transfer matrix computation was taken from: [Moroz2005](https://doi.org/10.1016/j.aop.2004.07.002). 
+
+On  the basis of that, field enhancement factor for excitation field (with respect to spatially averaged plain-wave) is calculated, the method was adapted from [Le Ru and Etchegoin SPLAC Package](https://www.victoria.ac.nz/scps/research/research-groups/raman-lab/numerical-tools/sers-and-plasmonics-codes). Enhancement of radiative emission rate was calculated as in [Moroz2005](https://doi.org/10.1016/j.aop.2004.07.002). Enhancement of total emission rate was obtained by integration of Poynting vector below and under the dipole position.
  
+The  longitudinal modes in nonlocal metal dielectric response were treated as in [Moroz2005](https://doi.org/10.1016/j.aop.2004.07.002) with metal hydrodynamic constant and longitudinal wave vector taken as in [Raza2015](https://doi.org/10.1088/0953-8984/27/18/183204) (omitting the size-correction part). The changes in electron mean-free path due to the surface scattering is obtained from: [Moroz2008](https://doi.org/10.1021/jp8010074).
  
+ I recommend the following positions that explain the physics behind these calculations:
+ 
+* LeRu2008
+* Novotny2012
 # Similar software
 
 # Installation
@@ -44,27 +50,29 @@ Download [tar.gz archive](dist/yams-amd64.tar.gz)(~70 MB), and extract it:
 ```bash
 tar -zxvf yams-amd64.tar.gz
 ```
-Run it either double-clicking on the ```dist/yams``` file or from the commandline:
+Run it either double-clicking on the ```dist/yams``` file or from the command line:
 ```bash
 cd dist/yams
 ./yams
 ```
 Tested on fresh install of Ubuntu 16.04.3 Desktop (Xenial Xerus).
 **Pros**: No need to install Python and extra packages.
-**Cons**: Archive is around 70MB as YAMS was written in pure Python and binaries were made with PyIstaller.
+**Cons**: Archive is around 70MB because YAMS was written in pure Python and binaries were made with PyIstaller. That also explains performance.
 # Usage
 ## User interface
+## Examples
 ## Input files
-All input files, as well as settings file are give in ```yaml``` format. Current specifications of the format are given in http://yaml.org/spec/1.2/spec.html. In fact, on the basis of existing files one can create their own without checking ```yaml``` specifications.
+All input files, as well as settings file are give in ```yaml``` format. Current specifications of the format are given [here](http://yaml.org/spec/1.2/spec.html). In fact, on the basis of existing files one can create their own without checking ```yaml``` specifications.
 ### Geometry
 Sample geometry files are contained in ```input_files``` folder and it is advised to save the newly created files also there. The files contain all the information needed to compute transfer matrices and enhancement factors. Sample geometry file with comments is in ```input_files/c510test_sample.yaml```. In doubt, you can always save input file generated in GUI by choosing ```file > save input as``` or load the file by ```file >load input file```.
 ### Photophysics
 Photophysics definition files consist of:
 
 * quantum yield,
-* orientation of transition dipole moment with respect to radial direction,
-* file with emission spectrum.
-For detailed specifications please check ```pkg_resources/photophysics/tpp_sample.yaml```. There is no need to add information about photophysics in any other configurations files.
+* orientation of transition dipole moment with respect to the radial direction,
+* a name of the file with emission spectrum.
+
+For detailed specifications please check ```pkg_resources/photophysics/tpp_sample.yaml```. If you want to add new fluorophore (not using the GUI), you just create a new file. There is no need to add information about photophysics in any other configurations files.
 
 ## Output files
 Software typically returns output in two formats: ```.pickle``` and ```.mat```. I found ```.txt``` not suitable for large n-dimensional matrices.
@@ -130,7 +138,7 @@ Corrections for metal include:
 
 Corrections can be included by adding appropriate entry in ```pkg_resources/mat_sizecor.yaml```. Entry consist of material constants in the right units, check comments in ```pkg_resources/mat_sizecor.yaml```. 
 ### Adding temperature correction for medium
-Solvents increase their density and refractive index with decreasing temperature. The changes in refractive index are calculated basing on density changes using Eyckmann's formula, check eq. (2) in [10.1111/j.1751-1097.1973.tb06343.x](10.1111/j.1751-1097.1973.tb06343.x).
+Solvents increase their density and refractive index with decreasing temperature. The changes in refractive index are calculated basing on density changes using Eyckmann's formula, check eq. (2) in [Mantulin1973](https://doi.org/10.1111/j.1751-1097.1973.tb06343.x).
 To include temperature changes on refractive index one needs the relative (to 298 K) densities of the solvents for each temperature. The file consist of a column with temperatures (in Kelvin) and a column with relative densities. Location of the files in ```pkg_resources/rho```. New entry for the solvent should be made in ```pkg_resources/mat_tempcor.yaml``` (just like in  ```pkg_resources/materials.yaml```).
 # Credits
 Contact: annamariakelm@gmail.com, GitHub: https://github.com/akelm
@@ -139,7 +147,21 @@ Contact: annamariakelm@gmail.com, GitHub: https://github.com/akelm
 Kelm, A. (2017). YAMS -- yet another Mie simulator [Computer software]. Available from: https://github.com/akelm/YAMS
 [BibTeX file](pkg_resources/references/citeme.bib)
 # References
+[1] Konrad, A.; Wackenhut, F.; Hussels, M.; Meixner, A. J.; Brecht, M. *J. Phys. Chem. C* **2013**, 117, 21476–21482.
+[2] Le Ru, E.; Etchegoin, P. *Principles of Surface-Enhanced Raman Spectroscopy and Related Plasmonic Effects*; Elsevier Science, **2008**.
+[3] Liu, M.; Pelton, M.; Guyot-Sionnest, P. *Phys. Rev. B* **2009**, 79, 035418.
+[4] Moroz, A. *J. Phys. Chem. C* **2008**, 112, 10641–10652.
+[5] Moroz, A. *Ann. Phys.* **2005**, 315, 352–418.
+[6] Novotny, L.; Hecht, B. *Principles of Nano-Optics; Cambridge University Press*, **2012**.
+[7] Raza, S.; Bozhevolnyi, S. I.; Wubs, M.; Mortensen, N. A. *J. Phys.: Condens. Matter* **2015**, 27, 183204.
 
+You can also find the following ```.bib``` reference files:
+
+* [pkg_resources/references/general.bib](pkg_resources/references/general.bib) for references on which program is bases,
+* [pkg_resources/references/RI.bib](pkg_resources/references/RI.bib)  for the sources of refractive indices,
+* [pkg_resources/references/rho.bib](pkg_resources/references/rho.bib)  for the sources of temperature-dependent densities.
+
+All the references are in file: [pkg_resources/references/references.pdf](pkg_resources/references/references.pdf)
 # License
 Copyright (C) 2017 Anna Kelm
 
@@ -150,3 +172,8 @@ This program is distributed in the hope that it will be useful, but WITHOUT ANY 
 You should have received a copy of the GNU General Public License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 [License file](LICENCSE)
+
+# To do
+- [ ] Total energy extracted from dipole from Green functions in section 9. in [Moroz2005](https://doi.org/10.1016/j.aop.2004.07.002)
+- [ ] x-axis label in plotting when one variable is dipole position
+- [ ] change base path explicitly to the one of yams/yams.py, regardless of from which directory it is opened

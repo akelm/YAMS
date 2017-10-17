@@ -222,21 +222,44 @@ def porph_int(results=[],data=[],picklefile=[],savename=None,rho_rel=1,dip_range
 #                comb_slices=[*largest_slice,*other_slice]
 #                (_,sorted_slices)=zip(*sorted(list(zip([largest_ind,other_ind],comb_slices)),key=itemgetter(0)))
 #                largest_sorted=sorted(largest_ind)
-                matx='';maty='';x_from=0;y_from=0;x_to=0;y_to=0
-                for (d,mat,ffrom,tto) in zip(largest_ind[0:2],[matx,maty],[x_from,y_from],[x_to,y_to]):
-                    # index is dipole range
-                    if d>matrix_sze:
-                        mat='dipole distance' 
-                        ffrom=photoph['dip_range'][0]
-                        tto=photoph['dip_range'][-1]
+
+                    
+#                matx='';maty='';x_from=0;y_from=0;x_to=0;y_to=0
+#                llx=list(zip([largest_ind[0:2],['',''],[0,0],[0,0]]))
+                mat=[]
+                extent_list=[]
+                for d in largest_ind[0:2]:
+                    if d==len(matrix_size):
+                        mat.append('dipole distance')
+                        extent_list.append(photoph['dip_range'][0])
+                        extent_list.append(photoph['dip_range'][-1])
                     else:
-                        mat=picklecontent['param']['layers'][d]['material']
-                        ffrom=picklecontent['param']['layers'][d]['range']['from']
-                        tto=picklecontent['param']['layers'][d]['range']['to']
-                extent_list=[x_from,x_to,y_from,y_to]
-        
+                        mat.append(picklecontent['param']['layers'][d]['material'])
+                        extent_list.append(picklecontent['param']['layers'][d]['range']['from'])
+                        extent_list.append(picklecontent['param']['layers'][d]['range']['to'])
+#                extent_list=[*llx[0][1:],*llx[1][1:]]
+                (matx,maty)=mat
+                (x_from,x_to,y_from,y_to)=extent_list
+#                (matx,x_fom,x_to)=llx[0][1:]
+#                (maty,y_fom,y_to)=llx[1][1:]
+#                print(llx)
+#                for (d,mat,ffrom,tto) in llx:
+#                    # index is dipole range
+#                    if d==len(matrix_size):
+#                        mat='dipole distance' 
+#                        ffrom=photoph['dip_range'][0]
+#                        tto=photoph['dip_range'][-1]
+#                    else:
+#                        mat=picklecontent['param']['layers'][d]['material']
+#                        ffrom=picklecontent['param']['layers'][d]['range']['from']
+#                        tto=picklecontent['param']['layers'][d]['range']['to']
+#                        print(ffrom,tto)
+#                extent_list=[x_from,x_to,y_from,y_to]
+#                print(llx)
+                
                 fig = plt.figure(figsize=(8+1.7,8*(y_to-y_from)/(x_to-x_from)))  
                 ax = fig.add_subplot(111)
+#                plt.colorbar()
                 for key in labels.keys():
                     img_list=[]
                     title=[]
@@ -256,14 +279,17 @@ def porph_int(results=[],data=[],picklefile=[],savename=None,rho_rel=1,dip_range
                     for obj in zip(img_list,title,fig_sufix):
                         imgplot = plt.imshow(obj[0],cmap="jet", interpolation="bicubic",\
                                              extent=extent_list)
+                        cb=plt.colorbar()
                         ax.set_title(obj[1])
                         ax.invert_yaxis()
-                        ax.set_xlabel(matx+' core radius / nm' if largest_sorted[0]==0 else matx+' layer thickness / nm')
+                        ax.set_xlabel(matx+' core radius / nm' if largest_ind[0]==0 else matx+' layer thickness / nm')
                         ax.set_ylabel(maty+' layer thickness / nm')
-                        plt.colorbar()
+#                        plt.colorbar()
                         figname=key+'_'+obj[2] if not savename else dirname+key+'_'+obj[2]+rawname
                         plt.savefig(figname+'.svg')
+                        cb.remove()
                         plt.cla()
+                        
     #                    print(plt.get_fignums())
                 plt.close('all')
     #            print(plt.get_fignums())

@@ -119,14 +119,14 @@ Advanced settings are in ```pkg_resources/setting.yaml```. These include multipr
 2. Add entry to ```pkg_resources/materials.yaml```:
 ```yaml
 material:
-	file: file_without_txt_extension	# file with refractive index
-							# location: resources/ref_ind/file_without_txt_extension.txt
-							# first column in wavelength in nm
-							# second column is complex refractive index
-							# the field cannot be empty
-	ref: key_of_reference	# reference to paper with published refractive index
-							# key in pkg_resources/references/RI.bib
-							# the field can be left empty
+    file: file_without_txt_extension    # file with refractive index
+                                        # location: resources/ref_ind/file_without_txt_extension.txt
+                                        # first column in wavelength in nm
+                                        # second column is complex refractive index
+                                        # the field cannot be empty
+    ref: key_of_reference               # reference to paper with published refractive index
+							            # key in pkg_resources/references/RI.bib
+					                    # the field can be left empty
 ```
 3. (Optional) Add reference entry to ```pkg_resources/references/RI.bib```.
 ### Adding corrections for metal

@@ -125,8 +125,8 @@ material:
                                         # second column is complex refractive index
                                         # the field cannot be empty
     ref: key_of_reference               # reference to paper with published refractive index
-							            # key in pkg_resources/references/RI.bib
-					                    # the field can be left empty
+                                        # key in pkg_resources/references/RI.bib
+                                        # the field can be left empty
 ```
 3. (Optional) Add reference entry to ```pkg_resources/references/RI.bib```.
 ### Adding corrections for metal

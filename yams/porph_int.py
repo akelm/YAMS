@@ -240,6 +240,8 @@ def porph_int(results=[],data=[],picklefile=[],savename=None,rho_rel=1,dip_range
 #                extent_list=[*llx[0][1:],*llx[1][1:]]
                 (matx,maty)=mat
                 (x_from,x_to,y_from,y_to)=extent_list
+#                extent_list[1],extent_list[2]=extent_list[2],extent_list[1]
+                
 #                (matx,x_fom,x_to)=llx[0][1:]
 #                (maty,y_fom,y_to)=llx[1][1:]
 #                print(llx)
@@ -277,13 +279,17 @@ def porph_int(results=[],data=[],picklefile=[],savename=None,rho_rel=1,dip_range
                         fig_sufix=['']
                         
                     for obj in zip(img_list,title,fig_sufix):
-                        imgplot = plt.imshow(obj[0],cmap="jet", interpolation="bicubic",\
-                                             extent=extent_list)
+                        #print(extent_list)
+                        #print(slice_1)
+#                        imgplot = plt.imshow(obj[0],cmap="jet", interpolation="bicubic",\
+#                                             extent=extent_list)
+                        imgplot = plt.imshow(obj[0],cmap="jet", interpolation="bicubic")
                         cb=plt.colorbar()
                         ax.set_title(obj[1])
+                        imgplot.set_extent([x_from,x_to,y_to,y_from])
                         ax.invert_yaxis()
                         ax.set_xlabel(matx+' core radius / nm' if largest_ind[0]==0 else matx+' layer thickness / nm')
-                        ax.set_ylabel(maty+' layer thickness / nm')
+                        ax.set_ylabel('dipole position / nm' if largest_ind[1]==len(matrix_size) else maty+' layer thickness / nm')
 #                        plt.colorbar()
                         figname=key+'_'+obj[2] if not savename else dirname+key+'_'+obj[2]+rawname
                         plt.savefig(figname+'.svg')

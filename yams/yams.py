@@ -389,7 +389,7 @@ class App:
         self.order= MyCombobox(frame, values=self.order_list,default_val=5)
         self.order.grid(column=3,row=3)
         
-        ttk.Label(frame,text='Number of point for integration in theta: ',\
+        ttk.Label(frame,text='Number of points for integration in theta: ',\
                   padding=(5,5,10,10)).grid(column=0,row=4,columnspan=3,sticky="w")
         self.theta_list=(90, 180, 360)
         self.theta= MyCombobox(frame, values=self.theta_list,default_val=180)
@@ -404,7 +404,7 @@ class App:
         ttk.Label(frame,text='Layer containing dipole: ',\
           padding=(5,5,10,10)).grid(column=0,row=6,columnspan=3,sticky="w")
 
-        ttk.Label(frame,text='Dipole distance from its inner bonduary (or origin) :',\
+        ttk.Label(frame,text='Dipole distance from inner bonduary (or origin) of the shell with dipole:',\
           padding=(5,5,10,10)).grid(column=0,row=7,columnspan=3,sticky="w")
         
         ttk.Label(frame,text='from /nm',padding=(5,5,10,10))\

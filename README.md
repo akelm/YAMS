@@ -1,7 +1,11 @@
 PDF version of this README is in [docs/README.pdf](docs/README.pdf)
 
 # YAMS -- yet another Mie simulator
+
 A Python program with GUI to calculate electromagnetic field enhancement factors for plain-wave and dipole radiation in spherical shell geometry. Additionally, it can calculate the subsequent changes of photophysics for given fluorophores.
+
+![alt text](pkg_resources/all.png "YAMS -- yet another Mie simulator")
+
 # How it works
  Software calculates transfer matrices for electromagnetic field in multipolar expansion for nanoparticles composed of concentric spheres. The method for transfer matrix computation was taken from: [Moroz2005](https://doi.org/10.1016/j.aop.2004.07.002). 
 
@@ -60,12 +64,37 @@ Tested on fresh install of Ubuntu 16.04.3 Desktop (Xenial Xerus).
 **Cons**: Archive is around 70MB because YAMS was written in pure Python and binaries were made with PyIstaller. That also explains performance.
 # Usage
 ## User interface
+### *Geometry* tab
+![alt text](pkg_resources/geom.png "Geometry tab")
+Here you can design your core-shell nanoparticle by adding layers of desired size ranges. For noble metals, you can choose whether to apply size correction and nonlocal corrections in transfer-matrix calculations. Inside the list, you can change the layers order by *drag-and-drop* method. ```Run > Preview``` will show the image of the nanoparticle.
+### *Parameters* tab
+![alt text](pkg_resources/param.png "Parameters tab")
+Wavelength range should cover emission of the chosen fluorophores. Please mind that most of the refractive indices provided end at 850 nm. 
+
+Vector spherical harmonics (VSH) expansion should be sufficient for the orders below 10. However, that might not be enough when dipole is very close to gold surface.
+
+*Number of points for integration in theta* refers to averaging of excitation field enhancement over &#952; angle (0 - 180 &#176;) around the nanoparticle, which has to be done numerically.
+
+*Temperature of the system* -- the default temperature is 298 K. Differences due to temperature change are applied through:
+
+* Modified dielectric function of metal (provided that the metal properties are set in ```pkg_resources/mat_sizecor.yaml`` file),
+* Modified density (and hence dielectric function) of the medium (provided that solvent relative density for this temperature is in appropriate file in ```pkg_resources/rho/``` and there is the entry for the solvent in ```pkg_resources/mat_tempcor.yaml```.
+### *Photophysics* tab
+![alt text](pkg_resources/photoph.png "Photophysics tab")
+Here you can choose 
+
+### *Files* tab
+![alt text](pkg_resources/files.png "Files tab")
+### *Log* tab
+![alt text](pkg_resources/log.png "Log tab")
+### Menus
+
 ## Examples
 ## Input files
 All input files, as well as settings file are give in ```yaml``` format. Current specifications of the format are given [here](http://yaml.org/spec/1.2/spec.html). In fact, on the basis of existing files one can create their own without checking ```yaml``` specifications.
-### Geometry
+### Geometry input files
 Sample geometry files are contained in ```input_files``` folder and it is advised to save the newly created files also there. The files contain all the information needed to compute transfer matrices and enhancement factors. Sample geometry file with comments is in ```input_files/c510test_sample.yaml```. In doubt, you can always save input file generated in GUI by choosing ```file > save input as``` or load the file by ```file >load input file```.
-### Photophysics
+### Photophysics definition file
 Photophysics definition files consist of:
 
 * quantum yield,
@@ -100,10 +129,10 @@ The shape of enhancement factors matrices is [number of dipole positions] x [num
 Output of photophysics calculation consists of:
 
  * *param*, *dip_range*, *rho_rel* as in **Mie calculation**,
- * *QabsM*, *QabsT*, *QextM*, *QextT*, *QscaM*, *QscaT* -- efficiencies matrices reshaped, to ```[layer0 size] x [layer1 size] x ... x [layern size] x [wavelength]``` and multiplied by *rho_rel* to express the observed changes in the spectra,
- * *Fexc_fluorophore* -- excitation enhancement for orientation of given fluorophore, reshaped to ```[layer0 size] x ... x [layern size] x [dipole positions] x [wavelength]```. This should give the change of exciation spectrum.
+ * *QabsM*, *QabsT*, *QextM*, *QextT*, *QscaM*, *QscaT* -- efficiencies matrices reshaped, to ```[layer0 size] x [layer1 size] x ... x [layerN size] x [wavelength]``` and multiplied by *rho_rel* to express the observed changes in the spectra,
+ * *Fexc_fluorophore* -- excitation enhancement for orientation of given fluorophore, reshaped to ```[layer0 size] x ... x [layerN size] x [dipole positions] x [wavelength]```. This should give the change of exciation spectrum.
  * *Frad_fluorophore* -- radiative decay rate enhancement as a function of emission wavelength, for given fluorophore orientation, the same size as *Fexc_fluorophore*. This should give the change of emission spectrum shape.
- * *FkRad_fluorophore* -- radiative decay rate enhancement integrated over fluorophore emission spectrum, the shape is: ```[layer0 size] x ... x [layern size] x [dipole positions]```,
+ * *FkRad_fluorophore* -- radiative decay rate enhancement integrated over fluorophore emission spectrum, the shape is: ```[layer0 size] x ... x [layerN size] x [dipole positions]```,
  * *FkTot _fluorophore* -- total decay rate enhancement integrated over fluorophore emission spectrum, the shape is as in *FkRad_fluorophore*,
  * *Ftau_fluorophore* -- reduction of fluorophore excited state lifetime, taking into account *FkTot _fluorophore* and its intrinsic non-radiative decay rate,
  * *FQY_fluorophore* -- enhancement of fluorophore quantum yield, *FkRad* * *Ftau*,
@@ -177,3 +206,5 @@ You should have received a copy of the GNU General Public License along with thi
 - [ ] Total energy extracted from dipole from Green functions in section 9. in [Moroz2005](https://doi.org/10.1016/j.aop.2004.07.002)
 - [ ] x-axis label in plotting when one variable is dipole position
 - [ ] change base path explicitly to the one of yams/yams.py, regardless of from which directory it is opened
+- [ ] correct size of the results
+- [ ] key bindings for starting calculations

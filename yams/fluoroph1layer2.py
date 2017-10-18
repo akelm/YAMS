@@ -165,7 +165,7 @@ def fluoroph1layer2(parfile=[],data=[],savename=None,mat_dict=None,\
 
 #    num_jobs = 2
 #    free_cpus = np.maximum( np.round(mp.cpu_count()-num_jobs)/num_jobs,0)
-    multiproc=settings['multiprocessing'] and (Camat.shape[0]>=num_jobs or Camat.shape[0]>dip_range_init.size)
+    #multiproc=settings['multiprocessing'] and (Camat.shape[0]>=num_jobs or Camat.shape[0]>dip_range_init.size)
     if multiproc:
         
         with mp.Pool(processes=num_jobs) as pool:

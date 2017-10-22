@@ -1,4 +1,13 @@
-# material    RI    name    reference    in    RI.bib
+# template
+#	material:
+#		file: file_without_txt_extension	# file with refractive index
+#							# location: resources/ref_ind/file_without_txt_extension.txt
+#							# first column in wavelength in nm
+#							# second column is complex refractive index
+#							# the field cannot be empty
+#		ref: key_of_reference			# reference to paper with published refractive index
+#							# key in pkg_resources/references/RI.bib
+#							# the field can be left empty
 acn:    
     file: moutzouris_n2
     ref:    moutzouris2014

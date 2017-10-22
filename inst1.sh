@@ -1,5 +1,7 @@
 #!/bin/bash
 # export PYTHONVERBOSE=0
+./mkreadme.sh
+rm -r dist/yams
 export QT_API=pyqt5
 pyinstaller -y -d --log-level=DEBUG old.yams.spec
 rm -r dist/yams/share/icons
@@ -200,4 +202,14 @@ rm dist/yams/zmq.backend.cython._poll.so
 rm dist/yams/zmq.backend.cython.socket.so
 rm dist/yams/zmq.backend.cython.utils.so
 rm dist/yams/zmq.backend.cython._version.so
-tar -zcvf dist/yams-0.1.tar.gz dist/yams
+#cp yams/coreshellobl32.gif dist/yams
+rm -r dist/pkg_resources
+rm -r dist/docs
+rm -r dist/input_files
+cp -r pkg_resources dist/
+cp -r docs dist/
+cp -r input_files dist/
+cp README.md dist/README.md
+rm dist/*.tar.gz
+tar -zcvf /tmp/yams-amd64-0.1.tar.gz dist/
+mv /tmp/yams-amd64-0.1.tar.gz dist/

@@ -43,10 +43,11 @@ import glob
 import shutil
 #import time
 import sys
-#import subprocess
+import subprocess
 from multiprocessing import Process
 import logging
 import pickle
+import webbrowser
 #paths=[os.getcwd(),\
 #os.path.abspath(os.path.join(os.getcwd(), os.pardir))+"/pkg_resources",\
 #os.path.abspath(os.path.join(os.getcwd(), os.pardir))+"/pkg_resources/ref_ind",\
@@ -136,18 +137,22 @@ def EnableButton(var,*arg):
             arrg.state(["disabled"])
 #%%
 class App:
-    def __init__(self, master):    
+    def __init__(self, master): 
+        # asolute path to app folder
+        self.abspath=os.path.dirname(sys.argv[0])+'/'
         # loading material files
-        with open('../pkg_resources/mat_sizecor.yaml') as stream:
+        with open(os.path.abspath(self.abspath+'../pkg_resources/mat_sizecor.yaml')) as stream:
             self.mat_sizecor_dict=yaml.load(stream)
-        with open('../pkg_resources/materials.yaml') as stream:
+        with open(os.path.abspath(self.abspath+'../pkg_resources/materials.yaml')) as stream:
             self.mat_dict=yaml.load(stream)
-        with open('../pkg_resources/mat_tempcor.yaml') as stream:
+        with open(os.path.abspath(self.abspath+'../pkg_resources/mat_tempcor.yaml')) as stream:
             self.mat_tempcor_dict=yaml.load(stream)
 
         # list of photophysics def files
-        self.foto_files=glob.glob('../pkg_resources/photophysics/*.yaml')
-        
+        self.foto_files=glob.glob(os.path.abspath(self.abspath+'../pkg_resources/photophysics')+'/*.yaml')
+        # icon for titlebars
+        self.imgicon = tk.PhotoImage(file=os.path.abspath(self.abspath+'../pkg_resources/coreshellobl32.gif'))
+
         self.master=master
         self.threadhandle=None
         self.threadpid=None
@@ -231,13 +236,29 @@ class App:
             obj.selection_range(0, tk.END)
         except AttributeError:
             pass
-        
+
+    def popup(self,event):
+        iid = self.master.winfo_containing(event.x_root, event.y_root)
+        if iid:
+#            print(iid.winfo_class())
+            idtypes=('TEntry','Listbox','TCombobox','Text')
+            # mouse pointer over item
+            if iid.winfo_class() in idtypes:
+                iid.focus_set()
+#               self.master.selection_set(self.iid)
+                self.editmenu.post(event.x_root, event.y_root)
+    def rem_popup(self,event):
+#        print('fff')
+        self.editmenu.unpost()
+    
     def create_menu(self,master):
         self.menubar=tk.Menu(master)
         # File
         self.filemenu = tk.Menu(self.menubar, tearoff=0)
-        self.filemenu.add_command(label="Load input file", command=self.LoadFile)
-        self.filemenu.add_command(label="Save input file", command=self.SaveFileNow)
+        self.filemenu.add_command(label="Load input file", command=self.LoadFile,accelerator="Ctrl+O")
+        self.master.bind_all("<Control-o>", lambda e: self.LoadFile() )
+        self.filemenu.add_command(label="Save input file", command=self.SaveFileNow,accelerator="Ctrl+S")
+        self.master.bind_all("<Control-s>", lambda e: self.SaveFileNow())
         self.filemenu.add_command(label="Load raw results", command=lambda: 
             self.LoadResFile(self.raw_results,"Save raw results as"))
         self.filemenu.add_command(label="Save raw results as", command=lambda:
@@ -248,23 +269,35 @@ class App:
                                   state="disabled")
 #        self.filemenu.add_command(label="Export .bib references", command=[])
         self.filemenu.add_separator()
-        self.filemenu.add_command(label="Exit", command=master.destroy)
+        self.filemenu.add_command(label="Exit", command=master.destroy,accelerator="Ctrl+Q")
+        self.master.bind_all("<Control-q>", lambda e: master.destroy())
         self.menubar.add_cascade(label="File", menu=self.filemenu)
         # Edit
         self.editmenu = tk.Menu(self.menubar, tearoff=0)
-        self.editmenu.add_command(label="Cut", command=self.cut)
-        self.editmenu.add_command(label="Copy", command=self.copy)
-        self.editmenu.add_command(label="Paste", command=self.paste)
-        self.editmenu.add_command(label="Select all", command=self.selectall)
+        self.editmenu.add_command(label="Cut", command=self.cut,accelerator="Ctrl+X")
+        self.editmenu.add_command(label="Copy", command=self.copy,accelerator="Ctrl+C")
+        self.editmenu.add_command(label="Paste", command=self.paste,accelerator="Ctrl+V")
+        self.editmenu.add_separator()
+        self.editmenu.add_command(label="Select all", command=self.selectall,accelerator="Ctrl+A")
         self.menubar.add_cascade(label="Edit", menu=self.editmenu)
+        self.master.bind_all("<Button-3>", self.popup)
+        self.master.bind_all("<Button-1>", self.rem_popup)
         # Run
         self.runmenu = tk.Menu(self.menubar, tearoff=0)
-        self.runmenu.add_command(label="Preview", command=self.create_window)
-        self.runmenu.add_command(label="Check integrity", command=self.results_size)
-        self.runmenu.add_command(label="Run Mie calc", command=self.Run)
-        self.runmenu.add_command(label="Run photophysics", command=self.RunFoto,state="disabled")
-        self.runmenu.add_command(label="Run all", command=lambda: self.Run(fotof_files=self.mlb.getcurselection(0)))
-        self.runmenu.add_command(label="Stop", command=self.stop,state="disabled")
+        self.runmenu.add_command(label="Refersh names", command=self.refresh_names,accelerator="Ctrl+R")
+        self.master.bind_all("<Control-r>", lambda e: self.refresh_names())        
+        self.runmenu.add_command(label="Preview", command=self.create_window,accelerator="Ctrl+P")
+        self.master.bind_all("<Control-p>", lambda e: self.create_window())
+        self.runmenu.add_command(label="Check integrity", command=self.check_integr)
+        self.runmenu.add_separator()
+        self.runmenu.add_command(label="Run Mie calc", command=self.Run,accelerator="F6")
+        self.master.bind_all("<F6>", lambda e: self.Run() )
+        self.runmenu.add_command(label="Run photophysics", command=self.RunFoto,state="disabled",accelerator="F7")
+        self.master.bind_all("<F7>", lambda e: self.RunFoto() )
+        self.runmenu.add_command(label="Run all", command=lambda: self.Run(fotof_files=self.mlb.getcurselection(0)),accelerator="F5")
+        self.master.bind_all("<F5>", lambda e: self.Run(fotof_files=self.mlb.getcurselection(0)) )
+        self.runmenu.add_command(label="Stop", command=self.stop,state="disabled",accelerator="Q")
+        self.master.bind_all("<q>", lambda e: self.stop() )
         self.menubar.add_cascade(label="Run", menu=self.runmenu)
         # Help
         self.helpmenu = tk.Menu(self.menubar, tearoff=0)
@@ -558,10 +591,10 @@ class App:
 #        self.frame_bottom = ttk.Frame(master)
 #        master.add(self.frame_bottom,text='Files') 
         self.refresh_button = ttk.Button(frame, text="Refresh names",padding=(5,5,10,10),\
-                                command=lambda: self.refresh_names(),state='enabled')
+                                command=self.refresh_names,state='enabled')
         self.refresh_button.grid(column=4,row=9,columnspan=2,sticky="ew")
         
-        self.butt_check=ttk.Button(frame, text='Check integrity and update size',padding=(5,5,10,10),
+        self.butt_check=ttk.Button(frame, text='Update size',padding=(5,5,10,10),
         command=self.results_size ,\
             state='enabled')
         self.butt_check.grid(column=3,row=9,columnspan=1,sticky="e")
@@ -579,7 +612,7 @@ class App:
         # SAVE PARAMS AND RES
 
         now='_'.join(map(str,datetime.datetime.now().timetuple()[0:6]))
-        direct='../results/res_'+now        
+        direct=os.path.abspath(self.abspath+'../results/res_'+now)        
         
         
         self.ifsavepar=tk.BooleanVar()
@@ -729,15 +762,23 @@ class App:
         
    #%% 
     def create_window(self):
+        try:
+            # checking the input
+            datastr1=self.make_dict()
+            datastr1=check_input(datastr1,dict(zip(self.mat_list,repeat(0))),self.mat_sizecor_dict.keys())
+        except:
+            self.logger.info('Incorrect input parameters')
+        else:
+#            self.logger.info('Correct input parameters')
+            fig=self.give_plot()
+            self.newwindow = tk.Toplevel(root)
+            self.newwindow.wm_title("Image of the system")
+            self.newwindow.tk.call('wm', 'iconphoto', self.newwindow._w, self.imgicon)
+            canvas = FigureCanvasTkAgg(fig, master=self.newwindow)
+            canvas.get_tk_widget().grid(column=1,row=1,columnspan=1)
+            canvas.draw()
+            self.logger.info('Shown system preview')
 
-        fig=self.give_plot()
-        self.newwindow = tk.Toplevel(root)
-        self.newwindow.wm_title("Image of the system")
- 
-        canvas = FigureCanvasTkAgg(fig, master=self.newwindow)
-        canvas.get_tk_widget().grid(column=1,row=1,columnspan=1)
-        canvas.draw()
-        self.logger.info('Shown system preview')
 
 
         #%%
@@ -788,220 +829,254 @@ class App:
             datastr1['layers']=layerslist
 #            print(datastr1)
             return datastr1
+#%%
+    def check_integr(self):
+        try:
+            datastr1=self.make_dict()
+            datastr1=check_input(datastr1,dict(zip(self.mat_list,repeat(0))),self.mat_sizecor_dict.keys())
+        except:
+            self.logger.info('Incorrect input parameters')
+        else:
+            self.logger.info('Correct input parameters')
+
+
+
     #%%
     def results_size(self):
-        datastr1=self.make_dict()
-        datastr1=check_input(datastr1,dict(zip(self.mat_list,repeat(0))),self.mat_sizecor_dict.keys())
-        Lambda=[]
-        Lambda.append(zakres(datastr1['wavelength']).shape[0])
-        # dodaje liczby warstw
-        for dic in datastr1['layers'][:-1]:
-            # range of layer
-#            print(dic['range'])
-#            print(zakres(dic['range']).shape[0])
-            Lambda.append(zakres(dic['range']).shape[0])
-        how_many=np.prod(np.array(Lambda))
-        unit_size=841/(501*81*51)
-        total_size=np.round(unit_size*how_many,decimals=2)
-        pattern=re.compile(r'\b\d+(\.\d+)?\b')
-        newsize=re.sub(pattern,str(total_size),self.res_size.get())
-#        print(newsize)
-        self.res_size.set(newsize)
-        self.logger.info('Checked integrity and updated size')
-#        return str(total_size)
+        try:
+            datastr1=self.make_dict()
+            datastr1=check_input(datastr1,dict(zip(self.mat_list,repeat(0))),self.mat_sizecor_dict.keys())
+        except:
+            self.logger.info('Incorrect input parameters')
+        else:
+#            self.logger.info('Correct input parameters')
+            Lambda=[]
+            Lambda.append(zakres(datastr1['wavelength']).shape[0])
+            # dodaje liczby warstw
+            for dic in datastr1['layers'][:-1]:
+                # range of layer
+    #            print(dic['range'])
+    #            print(zakres(dic['range']).shape[0])
+                Lambda.append(zakres(dic['range']).size)
+                if 'attributes' in dic.keys():
+                    if dict in list(map(type,dic['attributes'])):
+                        Lambda.append(zakres(dic['attributes']['dipole']['range']).size)
+            how_many=np.prod(np.array(Lambda))
+            photo_num=len(self.mlb.getcurselection(0))
+            how_many_photo=how_many*photo_num
+            unit_size=69.2/10/10/10/501
+            unit_size_photo=79.5/10/10/10/501/3
+            total_size=np.round(unit_size*how_many + unit_size_photo*how_many_photo,decimals=2)
+            pattern=re.compile(r'\b\d+(\.\d+)?\b')
+            newsize=re.sub(pattern,str(total_size),self.res_size.get())
+    #        print(newsize)
+            self.res_size.set(newsize)
+            self.logger.info('Updated size')
+    #        return str(total_size)
         
     #%%
     def RunFoto(self):
-        def run_code(self):
-#            print(self.threadhandle)
-#            self.butt_run.state(["disabled"])
-            self.runmenu.entryconfigure("Run all",state="disabled")
-            self.runmenu.entryconfigure("Run Mie calc",state="disabled")
-            self.runmenu.entryconfigure("Run photophysics",state="disabled")
-            self.runmenu.entryconfigure("Stop",state="normal")
-            self.toplev=tk.Toplevel(root)
-            self.toplev.wm_title('YAMS, processing...')
-            self.toplev.protocol("WM_DELETE_WINDOW", self.stop)
-            self.progress_bar = ttk.Progressbar(self.toplev,
-                                                orient=tk.HORIZONTAL,
-                                                mode='indeterminate',
-                                                takefocus=True,
-                                                length=200)
-            self.progress_bar.grid(column=0,row=0,padx=5,pady=5)
-            self.butt_stop = ttk.Button(self.toplev, text="STOP",padding=(5,5,5,5),\
-                                        command=self.stop)
-            self.butt_stop.grid(column=1,row=0,columnspan=1,sticky="w")
-            self.labelrun=tk.StringVar()
-            self.labelrun.set('Running calculations...')
-            self.runlabel=ttk.Label(self.toplev,textvariable=self.labelrun,\
-                  padding=(5,5,10,10)).grid(column=0,row=1,columnspan=2,sticky="w")
-            self.progress_bar.start()    
-#            datastr1=self.make_dict()
-#            if self.ifsavepar.get():
-#                direct=os.path.dirname(self.entry_savepar.get())
-#                # create path if nonexistent
-#                if not os.path.exists(direct):
-#                    os.makedirs(direct)
-#                # save params
-#                with open(self.entry_savepar.get(), 'w', encoding='utf8') as outfile:
-#                    yaml.dump(datastr1, outfile, default_flow_style=False, allow_unicode=True)
-            savename=self.entry_savefoto.get()
-            if not savename:
-                savename=self.raw_results
-#            print('raw_results '+self.raw_results)
-            kwargs={'picklefile':self.raw_results,\
-                            'savename':savename,\
-                            'fotof_files':self.mlb.getcurselection(0)}
-            p = Process(target=porph_int, kwargs=kwargs)
-            p.start()
-            self.subproc_pid=p.pid
-            p.join() # this blocks until the process terminates
-#            fluoroph1layer2(data=datastr1,\
-#                            savename=self.ifsaveres.get() and self.entry_saveres.get() or [],\
-#                            mat_dict=self.mat_dict,mat_sizecor_dict=self.mat_sizecor_dict,\
-#                            mat_tempcor_dict=self.mat_tempcor_dict)
+        if self.runmenu.entrycget("Run all","state")=="normal":
+            def run_code(self):
+    #            print(self.threadhandle)
+    #            self.butt_run.state(["disabled"])
+                self.runmenu.entryconfigure("Run all",state="disabled")
+                self.runmenu.entryconfigure("Run Mie calc",state="disabled")
+                self.runmenu.entryconfigure("Run photophysics",state="disabled")
+                self.runmenu.entryconfigure("Stop",state="normal")
+                self.toplev=tk.Toplevel(root)
+                self.toplev.wm_title('YAMS, processing...')
+                self.toplev.tk.call('wm', 'iconphoto', self.toplev._w, self.imgicon)
+                self.toplev.protocol("WM_DELETE_WINDOW", self.stop)
+                self.progress_bar = ttk.Progressbar(self.toplev,
+                                                    orient=tk.HORIZONTAL,
+                                                    mode='indeterminate',
+                                                    takefocus=True,
+                                                    length=200)
+                self.progress_bar.grid(column=0,row=0,padx=5,pady=5)
+                self.butt_stop = ttk.Button(self.toplev, text="STOP",padding=(5,5,5,5),\
+                                            command=self.stop)
+                self.butt_stop.grid(column=1,row=0,columnspan=1,sticky="w")
+                self.labelrun=tk.StringVar()
+                self.labelrun.set('Running calculations...')
+                self.runlabel=ttk.Label(self.toplev,textvariable=self.labelrun,\
+                      padding=(5,5,10,10)).grid(column=0,row=1,columnspan=2,sticky="w")
+                self.progress_bar.start()    
+    #            datastr1=self.make_dict()
+    #            if self.ifsavepar.get():
+    #                direct=os.path.dirname(self.entry_savepar.get())
+    #                # create path if nonexistent
+    #                if not os.path.exists(direct):
+    #                    os.makedirs(direct)
+    #                # save params
+    #                with open(self.entry_savepar.get(), 'w', encoding='utf8') as outfile:
+    #                    yaml.dump(datastr1, outfile, default_flow_style=False, allow_unicode=True)
+                savename=self.entry_savefoto.get()
+                if not savename:
+                    savename=self.raw_results
+    #            print('raw_results '+self.raw_results)
+                kwargs={'picklefile':self.raw_results,\
+                                'savename':savename,\
+                                'fotof_files':self.mlb.getcurselection(0)}
+                p = Process(target=porph_int, kwargs=kwargs)
+                p.start()
+                self.subproc_pid=p.pid
+                p.join() # this blocks until the process terminates
+    #            fluoroph1layer2(data=datastr1,\
+    #                            savename=self.ifsaveres.get() and self.entry_saveres.get() or [],\
+    #                            mat_dict=self.mat_dict,mat_sizecor_dict=self.mat_sizecor_dict,\
+    #                            mat_tempcor_dict=self.mat_tempcor_dict)
+                
+    #            self.butt_run.state(["!disabled"])
+    
+    #            self.butt_stop.state(["disabled"])
+                self.toplev.destroy()
+                self.runmenu.entryconfigure("Run all",state="normal")
+                self.runmenu.entryconfigure("Run Mie calc",state="normal")
+                self.runmenu.entryconfigure("Run photophysics",state="normal")
+                self.runmenu.entryconfigure("Stop",state="disabled")
+                self.filemenu.entryconfigure("Save photophysics results as",state="normal")
+                self.foto_results=savename
+                self.logger.info('Photophysics calculation finished')
+    #        subproc=subprocess.run(["ls", "-l"])
+    #        print(subproc.pid)
+    #        self.subproc_pid=subproc.pid
+            self.threadhandle=Thread(target=run_code,args=(self,))
+            self.logger.info('Photophysics calculation started')
+    #        print(self.threadhandle)
+            self.threadhandle.start()
             
-#            self.butt_run.state(["!disabled"])
-
-#            self.butt_stop.state(["disabled"])
-            self.toplev.destroy()
-            self.runmenu.entryconfigure("Run all",state="normal")
-            self.runmenu.entryconfigure("Run Mie calc",state="normal")
-            self.runmenu.entryconfigure("Run photophysics",state="normal")
-            self.runmenu.entryconfigure("Stop",state="disabled")
-            self.filemenu.entryconfigure("Save photophysics results as",state="normal")
-            self.foto_results=savename
-            self.logger.info('Photophysics calculation finished')
-#        subproc=subprocess.run(["ls", "-l"])
-#        print(subproc.pid)
-#        self.subproc_pid=subproc.pid
-        self.threadhandle=Thread(target=run_code,args=(self,))
-        self.logger.info('Photophysics calculation started')
-#        print(self.threadhandle)
-        self.threadhandle.start()
-        
-#        porph_int(picklefile=self.picklefile,savename=self.ifsaveres.get() and self.entry_saveres.get() or [])
-      #%%  
+    #        porph_int(picklefile=self.picklefile,savename=self.ifsaveres.get() and self.entry_saveres.get() or [])
+          #%%  
     def Run(self,fotof_files=None):
-        
-        def run_code(self):
-#            print(self.threadhandle)
-#            self.butt_run.state(["disabled"])
-            self.runmenu.entryconfigure("Run all",state="disabled")
-            self.runmenu.entryconfigure("Run Mie calc",state="disabled")
-            self.runmenu.entryconfigure("Run photophysics",state="disabled")
-            self.runmenu.entryconfigure("Stop",state="normal")
-            self.toplev=tk.Toplevel(root)
-            self.toplev.wm_title('YAMS, processing...')
-            self.toplev.protocol("WM_DELETE_WINDOW", self.stop)
-            self.progress_bar = ttk.Progressbar(self.toplev,
-                                                orient=tk.HORIZONTAL,
-                                                mode='indeterminate',
-                                                takefocus=True,
-                                                length=200)
-            self.progress_bar.grid(column=0,row=0,padx=5,pady=5)
-            self.butt_stop = ttk.Button(self.toplev, text="STOP",padding=(5,5,5,5),\
-                                        command=self.stop)
-            self.butt_stop.grid(column=1,row=0,columnspan=1,sticky="w")
-            self.labelrun=tk.StringVar()
-            self.labelrun.set('Running calculations...')
-            self.runlabel=ttk.Label(self.toplev,textvariable=self.labelrun,\
-                  padding=(5,5,10,10)).grid(column=0,row=1,columnspan=2,sticky="w")
-            self.progress_bar.start()    
-            datastr1=self.make_dict()
-            if self.ifsavepar.get():
-                direct=os.path.dirname(self.entry_savepar.get())
-                # create path if nonexistent
-                if not os.path.exists(direct):
-                    os.makedirs(direct)
-                # save params
-                with open(self.entry_savepar.get(), 'w', encoding='utf8') as outfile:
-                    yaml.dump(datastr1, outfile, default_flow_style=False, allow_unicode=True)
-            savename=self.entry_saveres.get()
-            if not savename:
-                savename=self.saveres_default
-            kwargs={'data':datastr1,\
-                            'savename':savename,\
-                            'mat_dict':self.mat_dict,'mat_sizecor_dict':self.mat_sizecor_dict,\
-                            'mat_tempcor_dict':self.mat_tempcor_dict,'fotof_files':fotof_files}
-            p = Process(target=fluoroph1layer2, args=(),kwargs=kwargs)
-            
-            p.start()
-            self.subproc_pid=p.pid
-            p.join() # this blocks until the process terminates
-#            fluoroph1layer2(data=datastr1,\
-#                            savename=self.ifsaveres.get() and self.entry_saveres.get() or [],\
-#                            mat_dict=self.mat_dict,mat_sizecor_dict=self.mat_sizecor_dict,\
-#                            mat_tempcor_dict=self.mat_tempcor_dict)
-            
-#            self.butt_run.state(["!disabled"])
-
-#            self.butt_stop.state(["disabled"])
-            self.toplev.destroy()
-            self.runmenu.entryconfigure("Run all",state="normal")
-            self.runmenu.entryconfigure("Run Mie calc",state="normal")
-            self.runmenu.entryconfigure("Run photophysics",state="normal")
-            self.runmenu.entryconfigure("Stop",state="disabled")           
-            self.filemenu.entryconfigure("Save raw results as",state="normal")
-            self.raw_results=savename
-            if fotof_files==None:
-                self.logger.info('Mie theory calculation finished')
+        if self.runmenu.entrycget("Run all","state")=="normal":
+            def run_code(self):
+    #            print(self.threadhandle)
+    #            self.butt_run.state(["disabled"])
+                self.runmenu.entryconfigure("Run all",state="disabled")
+                self.runmenu.entryconfigure("Run Mie calc",state="disabled")
+                self.runmenu.entryconfigure("Run photophysics",state="disabled")
+                self.runmenu.entryconfigure("Stop",state="normal")
+                self.toplev=tk.Toplevel(root)
+                self.toplev.wm_title('YAMS, processing...')
+                self.toplev.tk.call('wm', 'iconphoto', self.toplev._w, self.imgicon)
+                self.toplev.protocol("WM_DELETE_WINDOW", self.stop)
+                self.progress_bar = ttk.Progressbar(self.toplev,
+                                                    orient=tk.HORIZONTAL,
+                                                    mode='indeterminate',
+                                                    takefocus=True,
+                                                    length=200)
+                self.progress_bar.grid(column=0,row=0,padx=5,pady=5)
+                self.butt_stop = ttk.Button(self.toplev, text="STOP",padding=(5,5,5,5),\
+                                            command=self.stop)
+                self.butt_stop.grid(column=1,row=0,columnspan=1,sticky="w")
+                self.labelrun=tk.StringVar()
+                self.labelrun.set('Running calculations...')
+                self.runlabel=ttk.Label(self.toplev,textvariable=self.labelrun,\
+                      padding=(5,5,10,10)).grid(column=0,row=1,columnspan=2,sticky="w")
+                self.progress_bar.start()    
+                datastr1=self.make_dict()
+                if self.ifsavepar.get():
+                    direct=os.path.dirname(self.entry_savepar.get())
+                    # create path if nonexistent
+                    if not os.path.exists(direct):
+                        os.makedirs(direct)
+                    # save params
+                    with open(self.entry_savepar.get(), 'w', encoding='utf8') as outfile:
+                        yaml.dump(datastr1, outfile, default_flow_style=False, allow_unicode=True)
+                savename=self.entry_saveres.get()
+                if not savename:
+                    savename=self.saveres_default
+                kwargs={'data':datastr1,\
+                                'savename':savename,\
+                                'mat_dict':self.mat_dict,'mat_sizecor_dict':self.mat_sizecor_dict,\
+                                'mat_tempcor_dict':self.mat_tempcor_dict,'fotof_files':fotof_files}
+                p = Process(target=fluoroph1layer2, args=(),kwargs=kwargs)
+                
+                p.start()
+                self.subproc_pid=p.pid
+                p.join() # this blocks until the process terminates
+    #            fluoroph1layer2(data=datastr1,\
+    #                            savename=self.ifsaveres.get() and self.entry_saveres.get() or [],\
+    #                            mat_dict=self.mat_dict,mat_sizecor_dict=self.mat_sizecor_dict,\
+    #                            mat_tempcor_dict=self.mat_tempcor_dict)
+                
+    #            self.butt_run.state(["!disabled"])
+    
+    #            self.butt_stop.state(["disabled"])
+                self.toplev.destroy()
+                self.runmenu.entryconfigure("Run all",state="normal")
+                self.runmenu.entryconfigure("Run Mie calc",state="normal")
+                self.runmenu.entryconfigure("Run photophysics",state="normal")
+                self.runmenu.entryconfigure("Stop",state="disabled")           
+                self.filemenu.entryconfigure("Save raw results as",state="normal")
+                self.raw_results=savename
+                if fotof_files==None:
+                    self.logger.info('Mie theory calculation finished')
+                else:
+                    self.logger.info('Mie theory and photophysics calculation finished')
+    #        subproc=subprocess.run(["ls", "-l"])
+    #        print(subproc.pid)
+    #        self.subproc_pid=subproc.pid
+            try:
+                datastr1=self.make_dict()
+                datastr1=check_input(datastr1,dict(zip(self.mat_list,repeat(0))),self.mat_sizecor_dict.keys())  
+            except:
+                self.logger.info('Incorrect input parameters')  
             else:
-                self.logger.info('Mie theory and photophysics calculation finished')
-#        subproc=subprocess.run(["ls", "-l"])
-#        print(subproc.pid)
-#        self.subproc_pid=subproc.pid
-        self.threadhandle=Thread(target=run_code,args=(self,))
-#        print(self.threadhandle)
-        if fotof_files==None:
-            self.logger.info('Mie theory calculation started')
-        else:
-            self.logger.info('Mie theory and photophysics calculation started')
-        self.threadhandle.start()
-#        curpid=os.getpid()
-#        print('currpid ',curpid)
-#        parent = psutil.Process(curpid)
-#        for child in parent.children(recursive=True):  # or parent.children() for recursive=False
-#            print(child)
-        
+#                self.logger.info('Correct input parameters')
+                self.threadhandle=Thread(target=run_code,args=(self,))
+        #        print(self.threadhandle)
+                if fotof_files==None:
+                    self.logger.info('Mie theory calculation started')
+                else:
+                    self.logger.info('Mie theory and photophysics calculation started')
+                self.threadhandle.start()
+        #        curpid=os.getpid()
+        #        print('currpid ',curpid)
+        #        parent = psutil.Process(curpid)
+        #        for child in parent.children(recursive=True):  # or parent.children() for recursive=False
+        #            print(child)
+            
      #%%
     def stop(self):
-        def stoop(self):
-            ### kill children
-#            curpid=os.getpid()
-            curpid=self.subproc_pid
-#            print('currpid ',curpid)
-            parent = psutil.Process(curpid)
-#            print('par chld ',parent.children(recursive=True))
-            for child in parent.children(recursive=True):  # or parent.children() for recursive=False
-#                print('child ',child.pid)
-                child.kill()
-            parent.kill()
-#            print('killing ',self.threadhandle)
-
-            ### kill thread
-#            self.threadhandle.terminate()
-##            print('joining ',self.threadhandle)
-#            self.threadhandle.join()
-#            self.butt_run.state(["!disabled"])
-
-            self.toplev.destroy()
-            self.runmenu.entryconfigure("Run all",state="normal")
-            self.runmenu.entryconfigure("Run Mie calc",state="normal")
-            #self.runmenu.entryconfigure("Run photophysics",state="normal")
-            self.runmenu.entryconfigure("Stop",state="disabled") 
-            self.logger.info('Stopped')
-        self.logger.info('Stopping')
-        if self.threadhandle.isAlive() and self.toplev.winfo_exists():
-            self.butt_stop.state(["disabled"])
-            self.labelrun.set('Terminating calculations...')
-            Thread(target=stoop,args=(self,)).start()
+        if self.runmenu.entrycget("Run all","state")=="disabled":
+            def stoop(self):
+                ### kill children
+    #            curpid=os.getpid()
+                curpid=self.subproc_pid
+    #            print('currpid ',curpid)
+                parent = psutil.Process(curpid)
+    #            print('par chld ',parent.children(recursive=True))
+                for child in parent.children(recursive=True):  # or parent.children() for recursive=False
+    #                print('child ',child.pid)
+                    child.kill()
+                parent.kill()
+    #            print('killing ',self.threadhandle)
+    
+                ### kill thread
+    #            self.threadhandle.terminate()
+    ##            print('joining ',self.threadhandle)
+    #            self.threadhandle.join()
+    #            self.butt_run.state(["!disabled"])
+    
+                self.toplev.destroy()
+                self.runmenu.entryconfigure("Run all",state="normal")
+                self.runmenu.entryconfigure("Run Mie calc",state="normal")
+                #self.runmenu.entryconfigure("Run photophysics",state="normal")
+                self.runmenu.entryconfigure("Stop",state="disabled") 
+                self.logger.info('Stopped')
+            self.logger.info('Stopping')
+            if self.threadhandle.isAlive() and self.toplev.winfo_exists():
+                self.butt_stop.state(["disabled"])
+                self.labelrun.set('Terminating calculations...')
+                Thread(target=stoop,args=(self,)).start()
         
         
            #%%
     def refresh_names(self):
             now='_'.join(map(str,datetime.datetime.now().timetuple()[0:6]))
-            direct='../results/res_'+now
+            direct=os.path.abspath(self.abspath+'../results/res_'+now)
             self.entry_savepar.delete(0,tk.END)
             self.entry_savepar.insert(0,direct+'/par_'+now+'.yaml')
             self.entry_saveres.delete(0,tk.END)
@@ -1012,15 +1087,15 @@ class App:
    
    
  #%%       
-    def OpenFile(self,entry):
-        f = filedialog.askopenfilename(initialdir='../pkg_resources/photophysics')
+    def OpenFile(self,entry=None):
+        f = filedialog.askopenfilename(initialdir=os.path.abspath(self.abspath+'../pkg_resources/photophysics'))
         if f:
             entry.delete(0, tk.END)
             entry.insert(0,f)
             self.logger.info('Emission file selected')
  
-    def SaveFile(self,entry):
-        f = filedialog.asksaveasfilename(defaultextension=".yaml",initialdir='../results/')
+    def SaveFile(self,entry=None):
+        f = filedialog.asksaveasfilename(defaultextension=".yaml",initialdir=os.path.abspath(self.abspath+'../results/'))
         if f:
             entry.delete(0, tk.END)
             entry.insert(0,f)
@@ -1111,7 +1186,7 @@ class App:
         self.logger.info('Loaded photophysics definition file')
                 
      #%%         
-    def LoadFile(self):
+    def LoadFile(self,entry=None):
         
         f = filedialog.askopenfilename(initialdir="../input_files/",\
                                        filetypes=(("yaml files","*.yaml"),("all files","*.*")))
@@ -1196,7 +1271,7 @@ class App:
             if not os.path.isfile(emname): raise FileNotFoundError
             # kopiuje em file
             try: 
-                shutil.copy2(emname,'../pkg_resources/photophysics/')
+                shutil.copy2(emname,os.path.abspath(self.abspath+'../pkg_resources/photophysics/'))
             except shutil.SameFileError:
                 pass
             emname=os.path.basename(emname)
@@ -1220,7 +1295,7 @@ class App:
               (os.path.basename(param_name), qy, tdm,emname))
             # tutaj dodaje plik
             foto_dict={'QY':qy,'orient':[tdm,1-tdm],'emission':emname}
-            with open('../pkg_resources/photophysics/'+param_name, 'w', encoding='utf8') as outfile:
+            with open(os.path.abspath(self.abspath+'../pkg_resources/photophysics/'+param_name), 'w', encoding='utf8') as outfile:
                 yaml.dump(foto_dict, outfile, default_flow_style=False, allow_unicode=True)
             # clear the entry fields    
             self.clear_entries()
@@ -1231,7 +1306,7 @@ class App:
     def about(self):
 #        self.toplev1=Toplevel(root)
 #        self.toplev1.wm_title('About')
-        with open('../pkg_resources/about', 'r') as myfile:
+        with open(os.path.abspath(self.abspath+'../docs/about'), 'r') as myfile:
             data=myfile.read()
 #        self.T = Text(self.toplev1)
 #        self.T.grid(row=0,column=0,sticky=(N,S,E,W))
@@ -1239,11 +1314,15 @@ class App:
 #        self.T.config(justify=CENTER)
 #        self.T.state(["disabled"])
         messagebox.showinfo("About",data)
+            
+    #    root.wm_iconphoto(True, imgicon)
+#        messagebox.tk.call('wm', 'iconphoto', messagebox._w, self.imgicon)
         
     def show_license(self):
         self.toplev1=tk.Toplevel(root)
         self.toplev1.wm_title('License')
-        with open('../LICENSE', 'r') as myfile:
+        self.toplev1.tk.call('wm', 'iconphoto', self.toplev1._w, self.imgicon)
+        with open(os.path.abspath(self.abspath+'../LICENSE'), 'r') as myfile:
             data=myfile.read()        
         self.tekst=scrolledtext.ScrolledText(self.toplev1)
         self.tekst.grid(row=0,column=0)
@@ -1251,29 +1330,62 @@ class App:
         self.tekst.configure(state='disabled')
         
     def show_readme(self):
-        self.toplev1=tk.Toplevel(root)
-        self.toplev1.wm_title('README')
-        with open('../README.md', 'r') as myfile:
-            data=myfile.read()        
-        self.tekst=scrolledtext.ScrolledText(self.toplev1)
-        self.tekst.grid(row=0,column=0)
-        self.tekst.insert(tk.INSERT,data)
-        self.tekst.configure(state='disabled')
+        file=os.path.abspath(self.abspath+'../docs/README.pdf')
+        webbrowser.open(file,new=2)
+##        print(sys.platform)
+#        if sys.platform.startswith('win'):
+#            # windows
+#            os.system('start '+file)
+#        else:
+#            if sys.platform.startswith('darwin'):
+#                # OSX
+#                os.system('open '+file)
+#            else:
+#                # linux here
+#                print(sys.platform)
+#                subprocess.call(["xdg-open", file])
+#                print(sys.platform)
+#        self.toplev1=tk.Toplevel(root)
+#        self.toplev1.wm_title('README')
+#        with open(self.abspath+'../README.md', 'r') as myfile:
+#            data=myfile.read()        
+#        self.tekst=scrolledtext.ScrolledText(self.toplev1)
+#        self.tekst.grid(row=0,column=0)
+#        self.tekst.insert(tk.INSERT,data)
+#        self.tekst.configure(state='disabled')
         
     def references(self):
-        self.toplev1=tk.Toplevel(root)
-        self.toplev1.wm_title('References')
-        with open('../pkg_resources/references/references', 'r') as myfile:
-            data=myfile.read()        
-        self.tekst=scrolledtext.ScrolledText(self.toplev1)
-        self.tekst.grid(row=0,column=0)
-        self.tekst.insert(tk.INSERT,data)
-        self.tekst.configure(state='disabled')
+        file=os.path.abspath(self.abspath+'../pkg_resources/references/references.pdf')
+#        print(file)
+        webbrowser.open(file,new=2)
+#        if sys.platform.startswith('win'):
+#            # windows
+#            os.system('start '+file)
+#        else:
+#            if sys.platform.startswith('darwin'):
+#                # OSX
+#                os.system('open '+file)
+#            else:
+#                # linux here    
+#                subprocess.call(["xdg-open", file])
+#        self.toplev1=tk.Toplevel(root)
+#        self.toplev1.wm_title('References')
+#        with open('../pkg_resources/references/references', 'r') as myfile:
+#            data=myfile.read()        
+#        self.tekst=scrolledtext.ScrolledText(self.toplev1)
+#        self.tekst.grid(row=0,column=0)
+#        self.tekst.insert(tk.INSERT,data)
+#        self.tekst.configure(state='disabled')
 #%%
 if __name__ == "__main__":
     root = tk.Tk()
     App(root)
     root.wm_title('YAMS, yet another Mie simulator')
+    abspath=os.path.dirname(sys.argv[0])+'/'
+    imgicon = tk.PhotoImage(file=os.path.abspath(abspath+'../pkg_resources/coreshellobl32.gif'))
+#    root.wm_iconphoto(True, imgicon)
+    root.tk.call('wm', 'iconphoto', root._w, imgicon)  
+#    root.iconbitmap(r'/home/ania/Desktop/YAMS/yams/untitled24.bmp')
     root.mainloop()
 
     

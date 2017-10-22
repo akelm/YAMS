@@ -305,13 +305,18 @@ def porph_int(results=[],data=[],picklefile=[],savename=None,rho_rel=1,dip_range
                 pickle.dump(photoph,f)
         # saving obj to .mat file
         sio.savemat(dirname+rawname+'_photoph'+'.mat',photoph)
+#        if sum(list(map(gt,[*matrix_size],repeat(1))))<=1:
+#            # saving Q matrices to ASCII
+#            for key in qkeys:
+#                np.savetxt(dirname+rawname+key+.txt,np.squeeze(photoph[key])
+        ns_keys=['rho_rel','dip_range','param']    
+#        ns_keys.extend(qkeys)
+#        if sum(list(map(gt,[*matrix_size,photoph['dip_range'].size],repeat(1))))<=2:
+        # saving matrices to ASCII 
+        # just in case someone doesn't use MATLAB or Python
+        for names in photoph.keys():
+            if names not in ns_keys:
+                if sum(list(map(gt,photoph[names].shape,repeat(1))))<=2:
+                    np.savetxt(dirname+names+'_'+rawname+'.txt',np.squeeze(photoph[names]))
         
-        
-
-
-    
-
-    
-    
-    
         

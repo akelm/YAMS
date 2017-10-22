@@ -1,8 +1,23 @@
+# #####################
+# list of the layers
+# ####################
+# the first one is the core, the last one is the medium
+# order matters (obviously)
 layers:
+# each layer starts with "- "
+# after "-" material type, range or other attributes are listed
+# "attributes" is the optional field
+# here you can put information on whether to use corrections to noble metal dielectric function
+# or whether the layers contains dipole
+# you can have only one dipole defined
 - attributes:
   - size correction
   - nonlocal correction
+# "material" is obligatiory field
+# material name should be in the file pkg_resources/materials.yaml
   material: gold
+# "range" is obligatory field only for layers that are not medium
+# units are nm
   range:
     every: 1.0
     from: 7.5
@@ -12,6 +27,7 @@ layers:
     every: 1.0
     from: 10.0
     to: 10.0
+# here is example of medium layer with the dipole
 - attributes:
   - dipole:
       range:
@@ -19,9 +35,19 @@ layers:
         from: 0.5
         to: 2.5
   material: etoh
+# maximum order of expansion of VSH
+# it can be later truncated if becomes non-convergent
 max order of expansion: 20
+# temperature of the system
+# this modifies dielectric functions of metal (if defined in pkg_resources/mat_sizecor.yaml)
+# dielectric constant of the solvent due to contraction (if defined in pkg_resources/mat_tempcor.yam)
+# temperature is in Kelvins
 temperature: 298.0
+# how many points for integration of incoming field in theta angle
 theta: 360
+# wavelength range of incoming and outcoming radiation (should cover emission of the chosen fluorophores)
+# most of the refractive indices are up to 850 nm
+# the units are nm
 wavelength:
   every: 1.0
   from: 440.0

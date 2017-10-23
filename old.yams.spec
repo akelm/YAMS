@@ -4,7 +4,7 @@ block_cipher = None
 
 
 a = Analysis(['yams/yams.py'],
-             pathex=['/home/ania/Desktop/YAMS/yams', '/home/ania/.wine/drive_c/windows/system32', '/home/ania/.local', '/home/ania/.local/lib/python3.5', '/usr/lib/python3/dist-packages/spyder/utils/site', '/usr/lib/python35.zip', '/usr/lib/python3.5', '/usr/lib/python3.5/plat-x86_64-linux-gnu', '/usr/lib/python3.5/lib-dynload', '/home/ania/.local/lib/python3.5/site-packages', '/usr/local/lib/python3.5/dist-packages', '/usr/lib/python3/dist-packages', '/usr/lib/python35.zip', '/usr/lib/python3.5/plat-x86_64-linux-gnu', '/usr/lib/python3.5/lib-dynload', '/usr/lib/python3/dist-packages/IPython/extensions', '/home/ania/.ipython', '/home/ania/Desktop/YAMS','/usr/bin/upx'],
+             pathex=['/home/ania/Desktop/YAMS/yams', '/home/ania/.wine/drive_c/windows/system32', '/home/ania/.local', '/home/ania/.local/lib/python3.5', '/usr/lib/python3/dist-packages/spyder/utils/site', '/usr/lib/python35.zip', '/usr/lib/python3.5', '/usr/lib/python3.5/plat-x86_64-linux-gnu', '/usr/lib/python3.5/lib-dynload', '/home/ania/.local/lib/python3.5/site-packages', '/usr/local/lib/python3.5/dist-packages', '/usr/lib/python3/dist-packages', '/usr/lib/python35.zip', '/usr/lib/python3.5/plat-x86_64-linux-gnu', '/usr/lib/python3.5/lib-dynload', '/usr/lib/python3/dist-packages/IPython/extensions', '/home/ania/.ipython', '/home/ania/Desktop/YAMS','/usr/bin/upx','/usr/bin/'],
              binaries=[],
              datas=[],
              hiddenimports=['webbrowser'],

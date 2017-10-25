@@ -43,11 +43,11 @@ import glob
 import shutil
 #import time
 import sys
-#import subprocess
+import subprocess
 from multiprocessing import Process
 import logging
 import pickle
-import webbrowser
+
 #paths=[os.getcwd(),\
 #os.path.abspath(os.path.join(os.getcwd(), os.pardir))+"/pkg_resources",\
 #os.path.abspath(os.path.join(os.getcwd(), os.pardir))+"/pkg_resources/ref_ind",\
@@ -1329,9 +1329,24 @@ class App:
         self.tekst.insert(tk.INSERT,data)
         self.tekst.configure(state='disabled')
         
+        
     def show_readme(self):
+#        import subprocess
         file=os.path.abspath(self.abspath+'../docs/README.pdf')
-        webbrowser.open(file,new=2)
+        result = subprocess.run(['xdg-mime', 'query', 'default',\
+                                 'application/pdf'], stdout=subprocess.PIPE)
+#        print(result.stdout.decode('utf-8'))
+        appl=result.stdout.decode('utf-8').split('.')[0]
+        
+        os.system(appl+' '+file)
+#        import subprocess
+#        subprocess.run(('/usr/bin/xdg-open', file),shell=True)
+        
+#        import webbrowser
+#        file=os.path.abspath(self.abspath+'../docs/README.pdf')
+#        webbrowser.open(file,new=2)
+        
+        
 ##        print(sys.platform)
 #        if sys.platform.startswith('win'):
 #            # windows
@@ -1355,9 +1370,26 @@ class App:
 #        self.tekst.configure(state='disabled')
         
     def references(self):
+        
+#        import subprocess
         file=os.path.abspath(self.abspath+'../pkg_resources/references/references.pdf')
-#        print(file)
-        webbrowser.open(file,new=2)
+        result = subprocess.run(['xdg-mime', 'query', 'default',\
+                                 'application/pdf'], stdout=subprocess.PIPE)
+#        print(result.stdout.decode('utf-8'))
+        appl=result.stdout.decode('utf-8').split('.')[0]
+        
+        os.system(appl+' '+file)
+        
+        
+        
+        
+        
+#        os.system('/usr/bin/xdg-open '+file)
+        
+#        import webbrowser
+#        file=os.path.abspath(self.abspath+'../pkg_resources/references/references.pdf')
+##        print(file)
+#        webbrowser.open(file,new=2)
 #        if sys.platform.startswith('win'):
 #            # windows
 #            os.system('start '+file)

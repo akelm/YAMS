@@ -53,3 +53,6 @@ ether:
 isopentane:    
     file: isopentane
     ref:    kerl1995
+meoh:    
+    file: meoh
+    ref:    kozma2005

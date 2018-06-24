@@ -139,8 +139,15 @@ def EnableButton(var,*arg):
 class App:
     def __init__(self, master): 
         # asolute path to app folder
-        self.abspath=os.path.dirname(sys.argv[0])+'/'
+        self.abspath=os.path.dirname(os.path.realpath(__file__))+'/'
+        #self.abspath=os.path.dirname(sys.argv[0])+'/'
+        # print(self.abspath)
         # loading material files
+#        print(sys.argv[0])
+#        print(__file__)
+#        print(os.path.realpath(__file__))
+#        print(os.path.dirname(os.path.realpath(__file__)))
+#        print(os.path.abspath(self.abspath+'../pkg_resources/mat_sizecor.yaml'))
         with open(os.path.abspath(self.abspath+'../pkg_resources/mat_sizecor.yaml')) as stream:
             self.mat_sizecor_dict=yaml.load(stream)
         with open(os.path.abspath(self.abspath+'../pkg_resources/materials.yaml')) as stream:
@@ -1410,11 +1417,15 @@ class App:
 #        self.tekst.configure(state='disabled')
 #%%
 if __name__ == "__main__":
+    #print(os.path.dirname(os.path.realpath(__file__)))
+    abspath=os.path.dirname(os.path.realpath(__file__))+'/'
+    #os.chdir(abspath)
     root = tk.Tk()
     App(root)
     root.wm_title('YAMS, yet another Mie simulator')
-    abspath=os.path.dirname(sys.argv[0])+'/'
-    imgicon = tk.PhotoImage(file=os.path.abspath(abspath+'../pkg_resources/coreshellobl32.gif'))
+    
+    
+    imgicon = tk.PhotoImage(file=os.path.join(os.path.abspath(abspath+'../pkg_resources/coreshellobl32.gif')))
 #    root.wm_iconphoto(True, imgicon)
     root.tk.call('wm', 'iconphoto', root._w, imgicon)  
 #    root.iconbitmap(r'/home/ania/Desktop/YAMS/yams/untitled24.bmp')

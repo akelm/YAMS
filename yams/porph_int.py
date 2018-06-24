@@ -31,7 +31,9 @@ def porph_int(results=[],data=[],picklefile=[],savename=None,rho_rel=1,dip_range
 #            picklecontent=dic['picklecontent']
     if results and data:
         picklecontent={'results':results,'param':data,'rho_rel':rho_rel,'dip_range':dip_range}
-        
+    
+
+    abspath=os.path.dirname(os.path.realpath(__file__))+'/'    
     if savename:
         dirname=os.path.dirname(savename)
         # create path if nonexistent
@@ -41,10 +43,10 @@ def porph_int(results=[],data=[],picklefile=[],savename=None,rho_rel=1,dip_range
         filename=os.path.basename(savename)
         rawname=os.path.splitext(filename)[0]        
     else:
-        dirname='../results/'
+        dirname=os.path.abspath(abspath+'../results/')
     # settings file
     if not settings:
-        with open('../pkg_resources/settings.yaml') as stream:
+        with open(os.path.abspath(abspath+'../pkg_resources/settings.yaml')) as stream:
             settings=yaml.load(stream)
     
     
@@ -74,11 +76,13 @@ def porph_int(results=[],data=[],picklefile=[],savename=None,rho_rel=1,dip_range
 
 #    fotof_files=['tpp.yaml','pdtppF.yaml','pdtppP.yaml']
     # loading photophysics
+    
     for fotof_file in fotof_files:
 #        print(fotof_file)
-        with open('../pkg_resources/photophysics/'+fotof_file) as stream:
+        
+        with open(os.path.abspath(abspath+'../pkg_resources/photophysics/'+fotof_file)) as stream:
             fotof=yaml.load(stream)
-        spectrum=np.genfromtxt('../pkg_resources/photophysics/'+fotof['emission'],dtype=float)
+        spectrum=np.genfromtxt(os.path.abspath(abspath+'../pkg_resources/photophysics/'+fotof['emission']),dtype=float)
         # indices of wavelengths of emission
         spectrum_range=list(map(Lambda_dic.get,spectrum[:,0]))
         # to distingiush fotof file
@@ -317,6 +321,12 @@ def porph_int(results=[],data=[],picklefile=[],savename=None,rho_rel=1,dip_range
         for names in photoph.keys():
             if names not in ns_keys:
                 if sum(list(map(gt,photoph[names].shape,repeat(1))))<=2:
-                    np.savetxt(dirname+names+'_'+rawname+'.txt',np.squeeze(photoph[names]))
+#                    print(dirname+names+'_'+rawname+'.txt')
+#                    print(np.squeeze(photoph[names]).shape)
+                    savemat=np.squeeze(photoph[names])
+                    if savemat.shape==():
+                        np.savetxt(dirname+names+'_'+rawname+'.txt',savemat[None])
+                    else:
+                        np.savetxt(dirname+names+'_'+rawname+'.txt',savemat)
         
         

@@ -2,6 +2,7 @@ import numpy as np
 from sklearn.utils.extmath import cartesian
 from itertools import repeat,product,starmap
 from operator import *
+import os
 
 def find_ind(listobj,type):
     # find positions in a list: listobj where item is of type: type
@@ -219,13 +220,14 @@ def zakres(dic):
     return np.arange(dic['from'], dic['to']+dic['every'],dic['every'])
 
 def give_eps(filename,Lambda,mat_dict=None,T=None):
-    ceps=dict(np.genfromtxt('../pkg_resources/ref_ind/'+filename+'.txt',dtype=complex))
+    abspath=os.path.dirname(os.path.realpath(__file__))+'/'
+    ceps=dict(np.genfromtxt(os.path.abspath(abspath+'../pkg_resources/ref_ind/'+filename+'.txt'),dtype=complex))
         # reducing RI vector to desired wavelengths
     ceps1=np.array([*map(ceps.get,Lambda[:,0].tolist())])
     
     if mat_dict:
         # loading densities for T
-        rho_array=np.genfromtxt('../pkg_resources/rho/'+mat_dict['file']+'.txt', \
+        rho_array=np.genfromtxt(os.path.abspath(abspath+'../pkg_resources/rho/'+mat_dict['file']+'.txt'), \
             dtype=float,delimiter='\t')
         temp_range=rho_array[:,0]
         if not min(temp_range)<=T<=max(temp_range):

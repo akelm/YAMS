@@ -113,6 +113,7 @@ def fluoroph1layer2(parfile=[],data=[],savename=None,mat_dict=None,\
                     mat_sizecor_dict=None,mat_tempcor_dict=None,fotof_files=None):
 #    print("started fluoroph1layer2")
 #    print(parent_tid)
+    abspath=os.path.dirname(os.path.realpath(__file__))+'/'
     if (parfile and data):
         raise Exception("two param input sources")
     if not (parfile or data):
@@ -129,16 +130,16 @@ def fluoroph1layer2(parfile=[],data=[],savename=None,mat_dict=None,\
             data=yaml.load(myfile)
     # loading materials file if necessary
     if not mat_sizecor_dict:    
-        with open('../pkg_resources/mat_sizecor.yaml') as stream:
+        with open(os.path.abspath(abspath+'../pkg_resources/mat_sizecor.yaml')) as stream:
             mat_sizecor_dict=yaml.load(stream)
     if not mat_dict:        
-        with open('../pkg_resources/materials.yaml') as stream:
+        with open(os.path.abspath(abspath+'../pkg_resources/materials.yaml')) as stream:
             mat_dict=yaml.load(stream)
     if not mat_tempcor_dict:
-        with open('../pkg_resources/mat_tempcor.yaml') as stream:
+        with open(os.path.abspath(abspath+'../pkg_resources/mat_tempcor.yaml')) as stream:
             mat_tempcor_dict=yaml.load(stream)
     # settings file
-    with open('../pkg_resources/settings.yaml') as stream:
+    with open(os.path.abspath(abspath+'../pkg_resources/settings.yaml')) as stream:
         settings=yaml.load(stream)
     # function extracting variables from the file contents
     (nNmax,Lambda,Cepsilon_init,Camat,dd_init,nielokalne_init,sizecor_init,\

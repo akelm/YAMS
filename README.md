@@ -220,6 +220,10 @@ Contact: annamariakelm@gmail.com, GitHub: https://github.com/akelm
 # How to cite
 Kelm, A. (2017). YAMS -- yet another Mie simulator [Computer software]. Available from: https://github.com/akelm/YAMS
 [BibTeX file](pkg_resources/references/citeme.bib)
+
+# Acknowledgements
+This software is part of a research project funded by the Polish National Science Centre within Preludium 10 grant no. 2015/19/N/ST4/03827.
+
 # References
 [1] Konrad, A.; Wackenhut, F.; Hussels, M.; Meixner, A. J.; Brecht, M. *J. Phys. Chem. C* **2013**, 117, 21476–21482.
 [2] Le Ru, E.; Etchegoin, P. *Principles of Surface-Enhanced Raman Spectroscopy and Related Plasmonic Effects*; Elsevier Science, **2008**.
